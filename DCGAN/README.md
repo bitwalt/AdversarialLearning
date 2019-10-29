@@ -6,6 +6,8 @@ Here I present results obtained with a standard DCGAN for different loss functio
 
 * #### MNIST
 
+  [](https://github.com/waltermaffy/gan_thesis/blob/master/DCGAN/Original%20Loss/MNIST/mnist_9000.png)
+  
 * #### FASHION MNIST
 
 * #### CELEBA
