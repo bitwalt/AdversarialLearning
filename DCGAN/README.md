@@ -2,14 +2,16 @@
 
 Here I present results obtained with a standard DCGAN for different loss functions and for different datasets.
 
--- ORIGINAL LOSS 
+## ORIGINAL LOSS 
 
------ MNIST
+* #### MNIST
 
------ FASHION MNIST
+* #### FASHION MNIST
 
------ CELEBA
+* #### CELEBA
 
------ LSUN-BEDROOM
+* #### LSUN-BEDROOM
 
------ CIFAR10
+* #### CIFAR10
+
+## WGAN-GP (Wasserstein Loss with Gradient Penalty)
