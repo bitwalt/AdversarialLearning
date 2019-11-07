@@ -14,8 +14,10 @@ Here I present results obtained with a standard DCGAN for different loss functio
 
 * #### CELEBA
 
-* #### LSUN-BEDROOM
+  ![](https://github.com/waltermaffy/gan_thesis/blob/master/DCGAN/Original%20Loss/CELEBA/basicDC_CelebAgenerated_29.png)
 
 * #### CIFAR10
+
+  ![](https://github.com/waltermaffy/gan_thesis/blob/master/DCGAN/Original%20Loss/CIFAR10/CIFAR10_generated_50epochs.png)
 
 ## WGAN-GP (Wasserstein Loss with Gradient Penalty)
