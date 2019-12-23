@@ -39,7 +39,7 @@ weights_backup = False
 device = th.device("cuda" if th.cuda.is_available() else "cpu") # select the device to be used for training
 
 root = '/home/walteraul/'
-data_root = '/home/walteraul/datasets/celeba'
+data_root = '/home/walteraul/datasets/celeba/'
 out_folder= '/home/walteraul/Experiments/Image Generation/PROGAN/out'
 
 if Path(root).exists():
