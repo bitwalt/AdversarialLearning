@@ -2,9 +2,10 @@ import os
 import time, timeit, datetime
 import copy, zipfile
 import numpy as np
+import matplotlib.pyplot as plt
 import torch as th
 import torchvision as tv
-from torchvision.transforms import ToTensor, Normalize, Compose, Resize
+from torchvision.transforms import ToTensor, Normalize, Compose, Resize, CenterCrop
 from torchvision import datasets
 from torchvision.utils import save_image, make_grid
 from torch.optim import Adam
@@ -14,7 +15,38 @@ from torch.nn.modules.utils import _pair
 from torch.nn.functional import conv2d, conv_transpose2d, linear, interpolate
 from torch.utils.data import DataLoader
 from numpy import sqrt, prod
-import matplotlib.pyplot as plt
+from pathlib import Path
+
+"""# PARAMETERS"""
+
+dataset_name = 'CELEBA'
+losses = ["wgan-gp", "wgan", "lsgan", "lsgan-with-sigmoid", "hinge", "standard-gan", "relativistic-hinge"]
+loss = losses[0] 
+depth = 6           # [4x4, 8x8, 16x16, 32x32, 64x64, ...]
+dimensions = ['4x4', '8x8', '16X16', '32x32', '64x64', '128x128']
+batch_size = 32
+latent_size = 128
+lr=0.001
+epochs = 8
+img_size = [128,128,3]
+# hyper-parameters per depth (resolution)
+num_epochs = [epochs for _ in range(depth)]
+#num_epochs = [2,4,4,4,2]
+fade_ins = [50 for _ in range(depth)]
+batch_sizes = [batch_size for _ in range(depth)]
+weights_backup = False
+
+device = th.device("cuda" if th.cuda.is_available() else "cpu") # select the device to be used for training
+
+root = '/home/walteraul/'
+data_root = '/home/walteraul/datasets/celeba'
+out_folder= '/home/walteraul/Experiments/Image Generation/PROGAN/out'
+
+if Path(root).exists():
+    img_path = root + 'images/' + dataset_name + '/' + str(lr) + '/' + loss + '_bs' + str(batch_size) + '_epochs' + str(epochs) + '/'
+    os.makedirs(img_path, exist_ok=True)
+    #checkpoint_path = root + 'weights/' + dataset_name + '/' + loss + '_bs' + str(batch_size) + '/'
+    #os.makedirs(checkpoint_path, exist_ok=True)
 
 """# DATA LOADER"""
 
@@ -35,12 +67,16 @@ def get_transform(new_size=None):
             Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))])
     return image_transform
 
-def get_dataset(dataset_name, root_data):
-    transform = tv.transforms.ToTensor()
+def get_dataset(dataset_name, data_root):
+    transform=Compose([Resize(img_size[0]),
+                       CenterCrop(img_size[0]),
+                       ToTensor(),
+                       Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
     if dataset_name == 'CIFAR10':
         dataset = datasets.CIFAR10(root='./cifar10', download=True, transform=transform)
     elif dataset_name== 'CELEBA':
-        dataset = datasets.ImageFolder(root_data, transform=transform)
+        dataset = datasets.ImageFolder(data_root, transform=transform)
     elif  dataset_name== 'MNIST':
         dataset = datasets.MNIST(root='./mnist', train=True, download=True, transform=transform)
     elif  dataset_name== 'FASHION':
@@ -51,8 +87,6 @@ def get_data_loader(dataset, batch_size, num_workers):
     return DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers )
 
 """# CUSTOM LAYERS"""
-
-# extending Conv2D and Deconv2D layers for equalized learning rate logic
 class _equalized_conv2d(th.nn.Module):
     """ conv2d with the concept of equalized learning rate
         Args:
@@ -431,10 +465,7 @@ class DisGeneralConvBlock(th.nn.Module):
 
         return y
 
-# =============================================================
-# Interface for the losses
-# =============================================================
-
+"""# LOSSES"""
 class GANLoss:
     """ Base class for all losses
         @args:
@@ -466,10 +497,6 @@ class GANLoss:
         :return: loss => calculated loss Tensor
         """
         raise NotImplementedError("gen_loss method has not been implemented")
-
-# =============================================================
-# Normal versions of the Losses:
-# =============================================================
 
 class StandardGAN(GANLoss):
 
@@ -661,8 +688,7 @@ class RelativisticAverageHingeGAN(GANLoss):
         return (th.mean(th.nn.ReLU()(1 + r_f_diff))
                 + th.mean(th.nn.ReLU()(1 - f_r_diff)))
 
-"""# MODELS"""
-
+# MODELS
 # ========================================================================================
 # Generator Module
 # ========================================================================================
@@ -720,6 +746,10 @@ class Generator(th.nn.Module):
 
         # register the temporary upsampler
         self.temporaryUpsampler = lambda x: interpolate(x, scale_factor=2)
+
+
+    def sample_latent(self, num_samples):
+        return th.randn(num_samples, self.latent_size, 1, 1, device=device)
 
     def forward(self, x, depth, alpha):
         """
@@ -837,7 +867,7 @@ class Discriminator(th.nn.Module):
 class ProGAN:
     """ Wrapper around the Generator and the Discriminator """
 
-    def __init__(self, depth=7, latent_size=512, learning_rate=0.001, beta_1=0,
+    def __init__(self, depth=7, latent_size=512, learning_rate=lr, beta_1=0,
                  beta_2=0.99, eps=1e-8, drift=0.001, n_critic=1, use_eql=True,
                  loss="wgan-gp", use_ema=True, ema_decay=0.999,
                  device=th.device("cpu")):
@@ -880,6 +910,8 @@ class ProGAN:
         self.use_eql = use_eql
         self.device = device
         self.drift = drift
+
+        self.fixed_latents = th.randn(64, latent_size).to(device)
 
         # define the optimizers for the discriminator and generator
         self.gen_optim = Adam(self.gen.parameters(), lr=learning_rate, betas=(beta_1, beta_2), eps=eps)
@@ -1019,29 +1051,83 @@ class ProGAN:
         # return the loss value
         return loss.item()
 
-    @staticmethod
-    def create_grid(samples, scale_factor, img_file):
-        """
-        utility function to create a grid of GAN samples
-        :param samples: generated samples for storing
-        :param scale_factor: factor for upscaling the image
-        :param img_file: name of file to write
-        :return: None (saves a file)
-        """
-   
+    def store_checkpoint(self, epoch, depth, alpha, checkpoint_path):
+      checkpoint_file = os.path.join(checkpoint_path,  'ckpt_depth' + str(depth) + ".pt")
+      th.save({'epoch': epoch,
+                  'depth': depth,
+                  'alpha': alpha,
+                  'generator': self.gen.state_dict(),
+                  'discriminator': self.dis.state_dict(),
+                  'optimizerG': self.gen_optim.state_dict(),
+                  'optimizerD': self.dis_optim.state_dict(),
+                  #'loss': self.losses,
+                  'fixed_z': self.fixed_latents,
+                  #'images_gen': self.training_progress_images
+                  }, checkpoint_file)
+      print('Saved checkpoint at epoch: ', epoch)
+        
+    def restore_checkpoint(self,checkpoint_file):
+        if Path(checkpoint_file).exists():
+          checkpoint = th.load(checkpoint_file)
+          self.gen.load_state_dict(checkpoint['generator'])
+          self.dis.load_state_dict(checkpoint['discriminator'])
+          self.gen_optim.load_state_dict(checkpoint['optimizerG'])
+          self.dis_optim.load_state_dict(checkpoint['optimizerD'])
+          #self.losses = checkpoint['loss']
+          self.fixed_latents = checkpoint['fixed_z']
+          #self.training_progress_images = checkpoint['images_gen']
+          self.start_epoch = checkpoint['epoch']
+          self.depth = checkpoint['depth']
+          print('Checkpoint found and restored at epoch {}'.format(self.start_epoch))
+        else: 
+          print('Checkpoint not used or not exist\n')
+
+    def create_grid(self,scale_factor, epoch, depth, alpha, img_dir, save=False, show=False):
+        
+        img_file = os.path.join(img_dir,  'epoch' + str(epoch) + ".png")
+
+        with th.no_grad():
+            if self.use_ema:
+                samples = self.gen_shadow(self.fixed_latents, depth, alpha).detach()
+            else:
+                samples = self.gen(self.fixed_latents, depth, alpha).detach()
+                
         # upsample the image
         if scale_factor > 1:
             samples = interpolate(samples, scale_factor=scale_factor)
+                 
+        img_grid = make_grid(samples.cpu().data, normalize=True).numpy() 
+        img_grid = img_grid.transpose((1, 2, 0))
+        plt.figure(figsize=(10,10))
+        plt.imshow(img_grid)
+        plt.axis('off')
+        plt.title('Generated images {} after {} epochs'.format(dimensions[depth],(epoch)))
+        if save:
+            plt.savefig(img_file)
+        if show:
+            plt.show()
 
-        # save the images:
-        save_image(samples, img_file, nrow=int(np.sqrt(len(samples))), normalize=True, scale_each=True)
+    def sample_generator(self,n_samples=64):
+        latents = self.G.sample_latent(n_samples)
+        generated_data = self.G(latents)
+        return generated_data
+
+    def plot_save_generated(self, epoch=epochs, image_path='./out', save=True):
+        img = make_grid(self.sample_generator().cpu().data,normalize=True).numpy() 
+        img = img.transpose((1, 2, 0)) 
+        plt.figure(figsize=(10,10))
+        plt.imshow(img)
+        plt.axis('off')
+        plt.title('Generated images after {} epochs'.format((epoch+1)))
+        if save:
+            plt.savefig(image_path + '_generated_%d.png' % (epoch+1))
+        plt.show()
 
     def train(self, dataset, epochs, batch_sizes,
-              fade_in_percentage, num_samples=16,
-              start_depth=0, num_workers=3, feedback_factor=500,
+              fade_in_percentage,
+              start_depth=0, num_workers=3, image_factor=5, feedback_factor=500,
               sample_dir="./samples/", save_dir="./models/",
-              checkpoint_factor=1,
-              out_folder='./out'):
+              checkpoint_factor=5):
         """
         Utility method for training the ProGAN. Note that you don't have to necessarily use this
         you can use the optimize_generator and optimize_discriminator for your own training routine.
@@ -1075,18 +1161,16 @@ class ProGAN:
         if self.use_ema:
             self.gen_shadow.train()
 
-        # create a global time counter
-        global_time = time.time()
-
-        # create fixed_input for debugging
-        fixed_input = th.randn(num_samples, self.latent_size).to(self.device)
-
         print("Starting the training process ... ")
         for current_depth in range(start_depth, self.depth):
 
             print("\n\nCurrently working on Depth: ", current_depth)
             current_res = np.power(2, current_depth + 2)
             print("Current resolution: %d x %d" % (current_res, current_res))
+
+            #Create dir for saving images
+            img_dir = img_path + dimensions[current_depth]
+            os.makedirs(img_dir, exist_ok=True)
 
             data = get_data_loader(dataset, batch_sizes[current_depth], num_workers)
             ticker = 1
@@ -1102,6 +1186,10 @@ class ProGAN:
                 step = 0  # counter for number of iterations
 
                 for i, batch in enumerate(data):
+                    
+                    
+                    if i == 501: #train on less data
+                        break 
                     # calculate the alpha for fading in the layers
                     alpha = ticker / fader_point if ticker <= fader_point else 1
 
@@ -1123,49 +1211,25 @@ class ProGAN:
                     # increment the alpha ticker and the step
                     ticker += 1
                     step += 1
-
-                # create a grid of samples and save it
-                os.makedirs(sample_dir, exist_ok=True)
-                gen_img_file = os.path.join(sample_dir, "gen_" + str(current_depth) + "_" + str(epoch) + ".png")
-
-                # this is done to allow for more GPU space
-                with th.no_grad():
-                    self.create_grid(samples=self.gen(fixed_input, current_depth, alpha).detach() if not self.use_ema
-                        else self.gen_shadow(fixed_input,current_depth,alpha ).detach(),
-                            scale_factor=int(np.power(2, self.depth - current_depth - 1)),
-                            img_file=gen_img_file)
-
+             
+                # Save generated images for this epoch
+                self.create_grid(scale_factor=int(np.power(2, self.depth - current_depth - 1)),
+                                 epoch=epoch, depth=current_depth, alpha=alpha, img_dir=img_dir,
+                                 save=True, show=False)
+                
                 stop = timeit.default_timer()
                 print("Time taken for epoch: %.3f secs" % (stop - start))
 
-                if epoch % checkpoint_factor == 0 or epoch == 1 or epoch == epochs[current_depth]:
-                    os.makedirs(save_dir, exist_ok=True)
-                    gen_save_file = os.path.join(save_dir, "GAN_GEN_" + str(current_depth) + ".pth")
-                    dis_save_file = os.path.join(save_dir, "GAN_DIS_" + str(current_depth) + ".pth")
-                    gen_optim_save_file = os.path.join(save_dir, "GAN_GEN_OPTIM_" + str(current_depth) + ".pth")
-                    dis_optim_save_file = os.path.join(save_dir, "GAN_DIS_OPTIM_" + str(current_depth) + ".pth")
-
-                    th.save(self.gen.state_dict(), gen_save_file)
-                    th.save(self.dis.state_dict(), dis_save_file)
-                    th.save(self.gen_optim.state_dict(), gen_optim_save_file)
-                    th.save(self.dis_optim.state_dict(), dis_optim_save_file)
-
-                    # also save the shadow generator if use_ema is True
-                    if self.use_ema:
-                        gen_shadow_save_file = os.path.join(save_dir, "GAN_GEN_SHADOW_" + str(current_depth) + ".pth")
-                        th.save(self.gen_shadow.state_dict(), gen_shadow_save_file)
-        
-            #Plot after each depth
-            #self.create_grid(samples=self.gen(fixed_input, current_depth, alpha).detach()
-            img = make_grid(self.gen(fixed_input, current_depth, alpha).cpu().data).numpy() 
-            img = img.transpose((1, 2, 0))
-            plt.figure(figsize=(7,7))
-            plt.imshow(img)
-            plt.axis('off')
-            plt.title('Generated images')
-            plt.savefig(out_folder)
-            #plt.show()
-
+                #Save checkpoint
+                if weights_backup and (epoch % checkpoint_factor == 0 or epoch == epochs[current_depth]):
+                    self.store_checkpoint(epoch, current_depth, alpha)
+                
+                #Save generated images
+                if epoch % image_factor == 0 or epoch == epochs[current_depth]:
+                    self.create_grid(scale_factor=int(np.power(2, self.depth - current_depth - 1)),
+                                 epoch=epoch, depth=current_depth, alpha=alpha, img_dir=img_dir,
+                                 save=True, show=False)
+                    
         # put the gen, shadow_gen and dis in eval mode
         self.gen.eval()
         self.dis.eval()
@@ -1176,26 +1240,11 @@ class ProGAN:
 
 """# MAIN"""
 
-device = th.device("cuda" if th.cuda.is_available() else "cpu") # select the device to be used for training
-dataset_name = 'CELEBA'
-loss = 'wgan-gp' #["wgan-gp", "wgan", "lsgan", "lsgan-with-sigmoid", "hinge", "standard-gan" or "relativistic-hinge"]
-depth = 5           # [4x4, 8x8, 16x16, 32x32, 64x64, ...]
-batch_size = 64
-latent_size = 256
-epochs = 20
-# hyper-parameters per depth (resolution)
-num_epochs = [epochs for _ in range(depth)]
-fade_ins = [50 for _ in range(depth)]
-batch_sizes = [batch_size for _ in range(depth)]
-data_root = '/home/walteraul/datasets/celeba'
-out_folder= '/home/walteraul/Experiments/Image Generation/PROGAN/out'
-
 if __name__ == '__main__':
 
     dataset = get_dataset(dataset_name, data_root)
-
     # Create the PRO-GAN
-    pro_gan = ProGAN(depth=depth, latent_size=latent_size, loss=loss, device=device, out_folder=out_folder)
+    pro_gan = ProGAN(depth=depth, latent_size=latent_size, loss=loss, device=device)
 
     # Train the PRO-GAN
     pro_gan.train(dataset=dataset, epochs=num_epochs, fade_in_percentage=fade_ins, batch_sizes=batch_sizes)
