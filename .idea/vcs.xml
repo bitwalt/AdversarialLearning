@@ -3,5 +3,6 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Img2Img/cycle-pix2pix/pytorch-CycleGAN-and-pix2pix" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Img2Img/pytorch-CycleGAN-and-pix2pix" vcs="Git" />
   </component>
 </project>
