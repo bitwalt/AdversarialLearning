@@ -37,13 +37,14 @@ batch_sizes = [batch_size for _ in range(depth)]
 weights_backup = False
 
 device = th.device("cuda" if th.cuda.is_available() else "cpu") # select the device to be used for training
+print('Device: ', device)
 
 root = '/home/walteraul/'
 data_root = '/home/walteraul/datasets/celeba/'
 out_folder= '/home/walteraul/Experiments/Image Generation/PROGAN/out'
 
 if Path(root).exists():
-    img_path = root + 'images/' + dataset_name + '/' + str(lr) + '/' + loss + '_bs' + str(batch_size) + '_epochs' + str(epochs) + '/'
+    img_path = out_folder + 'images/' + dataset_name + '/lr' + str(lr) + '_' + loss + '_bs' + str(batch_size) + '_epochs' + str(epochs) + '/'
     os.makedirs(img_path, exist_ok=True)
     #checkpoint_path = root + 'weights/' + dataset_name + '/' + loss + '_bs' + str(batch_size) + '/'
     #os.makedirs(checkpoint_path, exist_ok=True)
