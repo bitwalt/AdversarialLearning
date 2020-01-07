@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Img2Img/pytorch-CycleGAN-and-pix2pix" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Img2Img/SG-GAN" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/DomainAdaptation/BDL" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/Img2Img/cycle-pix2pix" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.7 (my_env)" jdkType="Python SDK" />
