@@ -9,24 +9,30 @@ def prepare(img_dir, seg_dir, img_target_dir, seg_target_dir, replace_names=None
   imgs = set(glob(img_dir+"*.png"))
   segs = set(glob(seg_dir+"*.png"))
   pairs = []
+
   for img_path in list(imgs):
     seg_path = seg_dir + (img_path.split("/")[-1].replace(replace_names[0], replace_names[1]) if replace_names else img_path.split("/")[-1])
     if seg_path in segs:
       pairs.append((img_path, seg_path))
-  print "candidates:", len(pairs)
+  print("candidates:", len(pairs))
+
   if len(pairs) < args["train_size"] + args["test_size"]:
-    print "candidates not enough!"
+    print("candidates not enough!")
     return
+
   if not os.path.exists(img_target_dir):
     os.makedirs(img_target_dir)
     os.makedirs(img_target_dir.replace("train", "test"))
+
   if not os.path.exists(seg_target_dir):
     os.makedirs(seg_target_dir)
     os.makedirs(seg_target_dir.replace("train", "test"))
   shuffle(pairs)
+
   for i in range(args["train_size"]):
     shutil.copy2(pairs[i][0], img_target_dir + (pairs[i][0].split("/")[-1].replace(replace_names[0], "") if replace_names else ""))
     shutil.copy2(pairs[i][1], seg_target_dir + (pairs[i][1].split("/")[-1].replace(replace_names[1], "") if replace_names else ""))
+
   for i in range(args["train_size"], args["train_size"]+args["test_size"]):
     shutil.copy2(pairs[i][0], img_target_dir.replace("train", "test") + (pairs[i][0].split("/")[-1].replace(replace_names[0], "") if replace_names else ""))
     shutil.copy2(pairs[i][1], seg_target_dir.replace("train", "test") + (pairs[i][1].split("/")[-1].replace(replace_names[1], "") if replace_names else ""))

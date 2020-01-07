@@ -1,9 +1,5 @@
-import math
-import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
-
-from utils import *
 
 def batch_norm(x, name="batch_norm"):
     return tf.layers.batch_normalization(x, decay=0.9, updates_collections=None, epsilon=1e-5, scale=True, scope=name)

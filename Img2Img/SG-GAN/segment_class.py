@@ -80,15 +80,18 @@ def preprocess_master(src):
   pool.map(preprocess, segs)
  
 def preprocess(image_seg):
+
   base_name = os.path.basename(image_seg)
-  print "processing", base_name
+  print("processing", base_name)
   img = imread(image_seg)
   M, N = img.shape[:2]
   seg_class = np.zeros((M, N)).astype(np.int)
+
   for x in range(M):
     for y in range(N):
       seg_class[x,y] = maskmap[tuple(img[x,y,:3])]
-  toimage(seg_class, cmin=0, cmax=255).save(image_seg.replace("_seg", "_seg_class")) 
+
+  toimage(seg_class, cmin=0, cmax=255).save(image_seg.replace("_seg", "_seg_class"))
 
 if __name__ == "__main__":
   maskmap = A_maskmap()

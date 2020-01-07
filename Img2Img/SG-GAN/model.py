@@ -5,7 +5,6 @@ from glob import glob
 
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
-import numpy as np
 from collections import namedtuple
 
 from module import *
@@ -34,11 +33,8 @@ class sggan(object):
         else:
             self.criterionGAN = sce_criterion
 
-        OPTIONS = namedtuple('OPTIONS', 'batch_size image_height image_width \
-                              gf_dim df_dim output_c_dim is_training segment_class')
-        self.options = OPTIONS._make((args.batch_size, args.img_height, args.img_width,
-                                      args.ngf, args.ndf, args.output_nc,
-                                      args.phase == 'train', args.segment_class))
+        OPTIONS = namedtuple('OPTIONS', 'batch_size image_height image_width  gf_dim df_dim output_c_dim is_training segment_class')
+        self.options = OPTIONS._make((args.batch_size, args.img_height, args.img_width, args.ngf, args.ndf, args.output_nc, args.phase == 'train', args.segment_class))
 
         self._build_model()
         self.saver = tf.train.Saver()
@@ -46,14 +42,8 @@ class sggan(object):
 
 
     def _build_model(self):
-        self.real_data = tf.placeholder(tf.float32,
-                                        [None, self.image_height, self.image_width,
-                                         self.input_c_dim + self.output_c_dim],
-                                        name='real_A_and_B_images')
-        self.seg_data = tf.placeholder(tf.float32,
-                                        [None, self.image_height, self.image_width,
-                                         self.input_c_dim + self.output_c_dim],
-                                        name='seg_A_and_B_images')
+        self.real_data = tf.placeholder(tf.float32, [None, self.image_height, self.image_width, self.input_c_dim + self.output_c_dim], name='real_A_and_B_images')
+        self.seg_data = tf.placeholder(tf.float32, [None, self.image_height, self.image_width, self.input_c_dim + self.output_c_dim], name='seg_A_and_B_images')
         self.mask_A = tf.placeholder(tf.float32, [None, self.image_height/8, self.image_width/8, self.segment_class], name='mask_A')
         self.mask_B = tf.placeholder(tf.float32, [None, self.image_height/8, self.image_width/8, self.segment_class], name='mask_B')
 
@@ -112,13 +102,9 @@ class sggan(object):
             + self.Lg_lambda * gradloss_criterion(self.real_B, self.fake_A, self.weighted_seg_B)
 
         #fake_A
-        self.fake_A_sample = tf.placeholder(tf.float32,
-                                            [None, self.image_height, self.image_width,
-                                             self.input_c_dim], name='fake_A_sample')
+        self.fake_A_sample = tf.placeholder(tf.float32, [None, self.image_height, self.image_width, self.input_c_dim], name='fake_A_sample')
         #fake_B
-        self.fake_B_sample = tf.placeholder(tf.float32,
-                                            [None, self.image_height, self.image_width,
-                                             self.output_c_dim], name='fake_B_sample')
+        self.fake_B_sample = tf.placeholder(tf.float32, [None, self.image_height, self.image_width, self.output_c_dim], name='fake_B_sample')
         self.mask_A_sample = tf.placeholder(tf.float32, [None, self.image_height/8, self.image_width/8, self.segment_class], name='mask_A_sample')
         self.mask_B_sample = tf.placeholder(tf.float32, [None, self.image_height/8, self.image_width/8, self.segment_class], name='mask_B_sample')
 
@@ -153,12 +139,8 @@ class sggan(object):
              self.d_loss_sum]
         )
 
-        self.test_A = tf.placeholder(tf.float32,
-                                     [None, self.image_height, self.image_width,
-                                      self.input_c_dim], name='test_A')
-        self.test_B = tf.placeholder(tf.float32,
-                                     [None, self.image_height, self.image_width,
-                                      self.output_c_dim], name='test_B')
+        self.test_A = tf.placeholder(tf.float32, [None, self.image_height, self.image_width,  self.input_c_dim], name='test_A')
+        self.test_B = tf.placeholder(tf.float32, [None, self.image_height, self.image_width, self.output_c_dim], name='test_B')
         self.testB = self.generator(self.test_A, self.options, True, name="generatorA2B")
         self.testA = self.generator(self.test_B, self.options, True, name="generatorB2A")
 
@@ -195,8 +177,7 @@ class sggan(object):
             lr = args.lr if epoch < args.epoch_step else args.lr*(args.epoch-epoch)/(args.epoch-args.epoch_step)
 
             for idx in range(0, batch_idxs):
-                batch_files = list(zip(dataA[idx * self.batch_size:(idx + 1) * self.batch_size],
-                                       dataB[idx * self.batch_size:(idx + 1) * self.batch_size]))
+                batch_files = list(zip(dataA[idx * self.batch_size:(idx + 1) * self.batch_size], dataB[idx * self.batch_size:(idx + 1) * self.batch_size]))
                 batch_images = []
                 batch_segs = []
                 batch_seg_mask_A = []
@@ -220,6 +201,7 @@ class sggan(object):
                     self.mask_A: batch_seg_mask_A, self.mask_B: batch_seg_mask_B})
                 self.writer.add_summary(summary_str, counter)
                 [fake_A, fake_B, fake_A_mask, fake_B_mask] = self.pool([fake_A, fake_B, fake_A_mask, fake_B_mask])
+
                 # Update D network
                 _, summary_str = self.sess.run(
                     [self.d_optim, self.d_sum],
@@ -234,8 +216,7 @@ class sggan(object):
                 self.writer.add_summary(summary_str, counter)
 
                 counter += 1
-                print(("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (
-                    epoch, idx, batch_idxs, time.time() - start_time)))
+                print(("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch_idxs, time.time() - start_time)))
 
                 if np.mod(counter, args.print_freq) == 1:
                     self.sample_model(args.sample_dir, epoch, idx)
@@ -251,9 +232,7 @@ class sggan(object):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
-        self.saver.save(self.sess,
-                        os.path.join(checkpoint_dir, model_name),
-                        global_step=step)
+        self.saver.save(self.sess,os.path.join(checkpoint_dir, model_name),global_step=step)
 
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoint...")
