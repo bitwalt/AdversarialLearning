@@ -39,11 +39,11 @@ def prepare(img_dir, seg_dir, img_target_dir, seg_target_dir, replace_names=None
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
-  parser.add_argument("--A_imagepath", "-Ai", type=str, default="/home/lpl/data/playing/images/", help="dataset A's image path")
-  parser.add_argument("--A_segpath", "-As", type=str, default="/home/lpl/data/playing/labels/", help="dataset A's segmentation path")
+  parser.add_argument("--S_imagepath", "-Si", type=str, default="/home/lpl/data/playing/images/", help="dataset S's image path")
+  parser.add_argument("--S_segpath", "-Ss", type=str, default="/home/lpl/data/playing/labels/", help="dataset S's segmentation path")
   # cp `find train/ -name "*.png"` all_train/
-  parser.add_argument("--B_imagepath", "-Bi", type=str, default="/home/lpl/data/cityscape/leftImg8bit/all_train/", help="dataset B's image path")
-  parser.add_argument("--B_segpath", "-Bs", type=str, default="/home/lpl/data/cityscape/gtFine/all_train/", help="dataset B's segmentation path")
+  parser.add_argument("--R_imagepath", "-Ri", type=str, default="/home/lpl/data/cityscape/leftImg8bit/all_train/", help="dataset R's image path")
+  parser.add_argument("--R_segpath", "-Rs", type=str, default="/home/lpl/data/cityscape/gtFine/all_train/", help="dataset R's segmentation path")
   parser.add_argument("--train_size", "-tr", type=int, default=2000, help="number of training examples for each dataset")
   parser.add_argument("--test_size", "-te", type=int, default=500, help="number of test examples for each dataset")
   args = vars(parser.parse_args())

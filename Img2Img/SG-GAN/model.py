@@ -152,10 +152,8 @@ class sggan(object):
     def train(self, args):
         """Train SG-GAN"""
         self.lr = tf.placeholder(tf.float32, None, name='learning_rate')
-        self.d_optim = tf.train.AdamOptimizer(self.lr, beta1=args.beta1) \
-            .minimize(self.d_loss, var_list=self.d_vars)
-        self.g_optim = tf.train.AdamOptimizer(self.lr, beta1=args.beta1) \
-            .minimize(self.g_loss, var_list=self.g_vars)
+        self.d_optim = tf.train.AdamOptimizer(self.lr, beta1=args.beta1).minimize(self.d_loss, var_list=self.d_vars)
+        self.g_optim = tf.train.AdamOptimizer(self.lr, beta1=args.beta1).minimize(self.g_loss, var_list=self.g_vars)
 
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
@@ -232,7 +230,7 @@ class sggan(object):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
-        self.saver.save(self.sess,os.path.join(checkpoint_dir, model_name),global_step=step)
+        self.saver.save(self.sess,os.path.join(checkpoint_dir, model_name), global_step=step)
 
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoint...")
