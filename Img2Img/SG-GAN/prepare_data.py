@@ -39,15 +39,15 @@ def prepare(img_dir, seg_dir, img_target_dir, seg_target_dir, replace_names=None
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
-  parser.add_argument("--S_imagepath", "-Si", type=str, default="/home/lpl/data/playing/images/", help="dataset S's image path")
-  parser.add_argument("--S_segpath", "-Ss", type=str, default="/home/lpl/data/playing/labels/", help="dataset S's segmentation path")
+  parser.add_argument("--S_imagepath", "-Si", type=str, default="/media/data/walteraul_data/datasets/gta5/images/", help="dataset S's image path")
+  parser.add_argument("--S_segpath", "-Ss", type=str, default="/media/data/walteraul_data/datasets/gta5/labels/", help="dataset S's segmentation path")
   # cp `find train/ -name "*.png"` all_train/
-  parser.add_argument("--R_imagepath", "-Ri", type=str, default="/home/lpl/data/cityscape/leftImg8bit/all_train/", help="dataset R's image path")
-  parser.add_argument("--R_segpath", "-Rs", type=str, default="/home/lpl/data/cityscape/gtFine/all_train/", help="dataset R's segmentation path")
+  parser.add_argument("--R_imagepath", "-Ri", type=str, default="/media/data/walteraul_data/datasets/cityscapes/leftImg8bit/all_train/", help="dataset R's image path")
+  parser.add_argument("--R_segpath", "-Rs", type=str, default="/media/data/walteraul_data/datasets/cityscapes/gtFine/all_train/", help="dataset R's segmentation path")
   parser.add_argument("--train_size", "-tr", type=int, default=2000, help="number of training examples for each dataset")
   parser.add_argument("--test_size", "-te", type=int, default=500, help="number of test examples for each dataset")
   args = vars(parser.parse_args())
 
-  prepare(args["A_imagepath"], args["A_segpath"], "./datasets/gta/trainA/", "./datasets/gta/trainA_seg/")
-  prepare(args["B_imagepath"], args["B_segpath"], "./datasets/gta/trainB/", "./datasets/gta/trainB_seg/", replace_names=("_leftImg8bit", "_gtFine_color"))
+  prepare(args["S_imagepath"], args["S_segpath"], "./datasets/gta/trainA/", "./datasets/gta/trainA_seg/")
+  prepare(args["R_imagepath"], args["R_segpath"], "./datasets/gta/trainB/", "./datasets/gta/trainB_seg/", replace_names=("_leftImg8bit", "_gtFine_color"))
 
