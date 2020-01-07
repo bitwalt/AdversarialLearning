@@ -1,5 +1,3 @@
 GTA V:          /media/data/walteraul_data/datasets/gta5
 CITYSCAPES:     /media/data/walteraul_data/datasets/cityscapes
 output_dir:     /home/walteraul/Experiments/Domain_Adaptation/SG-GAN
-
-f
