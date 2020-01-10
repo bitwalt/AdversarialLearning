@@ -30,7 +30,7 @@ def main():
     
     for index, batch in enumerate(targetloader):
         if index % 100 == 0:
-            print '%d processd' % index
+            print('%d processd' % index)
         image, _, name = batch
         output = model(Variable(image).cuda(), ssl=True)
         output = nn.functional.softmax(output, dim=1)
@@ -50,10 +50,10 @@ def main():
             continue        
         x = np.sort(x)
         thres.append(x[np.int(np.round(len(x)*0.5))])
-    print thres
+    print(thres)
     thres = np.array(thres)
     thres[thres>0.9]=0.9
-    print thres
+    print(thres)
     for index in range(len(targetloader)):
         name = image_name[index]
         label = predicted_label[index]

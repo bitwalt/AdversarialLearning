@@ -10,7 +10,10 @@ from data import CreateTrgDataLoader
 from model import CreateModel
 from model import CreateDiscriminator
 from utils.timer import Timer
-import tensorboardX
+
+
+#import tensorboardX
+
 
 def main():
     
@@ -35,7 +38,7 @@ def main():
     if args.restore_from is not None:
         start_iter = int(args.restore_from.rsplit('/', 1)[1].rsplit('_')[1])
         
-    train_writer = tensorboardX.SummaryWriter(os.path.join(args.snapshot_dir, "logs", model_name))
+#    train_writer = tensorboardX.SummaryWriter(os.path.join(args.snapshot_dir, "logs", model_name))
     
     bce_loss = torch.nn.BCEWithLogitsLoss()
     
@@ -98,19 +101,18 @@ def main():
         optimizer_D.step()
         
         
-        for m in loss:
-            train_writer.add_scalar(m, eval(m), i+1)
+ #       for m in loss:
+ #           train_writer.add_scalar(m, eval(m), i+1)
             
         if (i+1) % args.save_pred_every == 0:
-            print 'taking snapshot ...'
+            print('taking snapshot ...')
             torch.save(model.state_dict(), os.path.join(args.snapshot_dir, '%s_' %(args.source) +str(i+1)+'.pth' ))   
             
         if (i+1) % args.print_freq == 0:
             _t['iter time'].toc(average=False)
-            print '[it %d][src seg loss %.4f][lr %.4f][%.2fs]' % \
-                    (i + 1, loss_seg_src.data, optimizer.param_groups[0]['lr']*10000, _t['iter time'].diff)
+            print('[it %d][src seg loss %.4f][lr %.4f][%.2fs]' %  (i + 1, loss_seg_src.data, optimizer.param_groups[0]['lr']*10000, _t['iter time'].diff))
             if i + 1 > args.num_steps_stop:
-                print 'finish training'
+                print('finish training')
                 break
             _t['iter time'].tic()
             
@@ -120,6 +122,3 @@ if __name__ == '__main__':
     os.system('rm tmp')    
     os.environ["CUDA_VISIBLE_DEVICES"] = str(np.argmax(memory_gpu))  
     main()
-    
-    
-        
