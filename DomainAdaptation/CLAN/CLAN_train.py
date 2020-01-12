@@ -63,7 +63,7 @@ if SOURCE == 'GTA5':
     Epsilon = 0.4
 
 INPUT_SIZE_TARGET = '1024,512'
-DATA_DIRECTORY_TARGET = './data/Cityscapes'
+DATA_DIRECTORY_TARGET = '/media/data/walteraul_data/datasets/cityscapes'
 DATA_LIST_PATH_TARGET = './dataset/cityscapes_list/train.txt'
 
 
