@@ -62,10 +62,15 @@ def main(args):
    compute_mIoU(args.gt_dir, args.pred_dir, args.devkit_dir)
 
 
+DATA_DIR = '/media/data/walteraul_data/datasets/cityscapes/gtFine/val'
+PRED_DIR = 'result/cityscapes/'
+
 if __name__ == "__main__":
+
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('gt_dir', type=str, help='directory which stores CityScapes val gt images')
-    parser.add_argument('pred_dir', type=str, help='directory which stores CityScapes val pred images')
+    parser.add_argument('-gt_dir', type=str, default=DATA_DIR, help='directory which stores CityScapes val gt images')
+    parser.add_argument('-pred_dir', type=str, default=PRED_DIR, help='directory which stores CityScapes val pred images')
     parser.add_argument('--devkit_dir', default='dataset/cityscapes_list', help='base directory of cityscapes')
     args = parser.parse_args()
     main(args)
