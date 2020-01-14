@@ -184,6 +184,17 @@ class ResNet101(nn.Module):
             
 def Deeplab(num_classes=21, init_weights=None, restore_from=None, phase='train'):
     model = ResNet101(Bottleneck, [3, 4, 23, 3], num_classes, phase)
-    
+    if init_weights is not None:
+        saved_state_dict = torch.load(init_weights, map_location=lambda storage, loc: storage)
+        new_params = model.state_dict().copy()
+        for i in saved_state_dict:
+            i_parts = i.split('.')
+            if not num_classes == 19 or not i_parts[1] == 'layer5':
+                new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
+                # new_params[i] = saved_state_dict[i]
+        model.load_state_dict(new_params)
+
+    if restore_from is not None:
+        model.load_state_dict(torch.load(restore_from + '.pth', map_location=lambda storage, loc: storage))
     return model
 

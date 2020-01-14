@@ -64,10 +64,19 @@ def main(gt_dir, pred_dir, devkit_dir):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-gt_dir', type=str, default=LABEL_DIR, help='directory which stores CityScapes val gt images')
+    parser.add_argument('-pred_dir', type=str, default=PRED_DIR, help='directory which stores CityScapes val pred images')
+    parser.add_argument('--devkit_dir', default='dataset/cityscapes_list', help='base directory of cityscapes')
+    parser.add_argument('--log_dir', default=LOG_DIR, help='log file directory')
+    parser.add_argument('--experiment', help='experiment name')
+
+
     with open("mIoU_result/GTA2Cityscapes_mIoU.csv","a+",newline="") as datacsv:
         csvwriter = csv.writer(datacsv,dialect = ("excel"))
-        for i in range(1, 50):
-            gt_dir = './data/Cityscapes/gtFine/val'
+        for i in range(1, 5):
+            gt_dir = '/media/data/walteraul_data/cityscapes/gtFine/val'
+
             pred_dir = './result/GTA2Cityscapes_{0:d}'.format(i*2000)
             devkit_dir = './dataset/cityscapes_list'
             mIoU = main(gt_dir, pred_dir, devkit_dir)

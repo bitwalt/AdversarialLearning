@@ -11,16 +11,15 @@ import torch.nn as nn
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
+SAVE_PATH = '/media/data/walteraul_data/results/10k_5000' # save prediction here
+RESTORE_FROM = './snapshots/5000/GTA5_10000.pth'          # Restore from this checkpoint
+
 DATA_DIRECTORY = '/media/data/walteraul_data/datasets/cityscapes'
 DATA_LIST_PATH = './dataset/cityscapes_list/val.txt'
-SAVE_PATH = './result/cityscapes'
-
 MODEL = 'ResNet' #Vgg
 IGNORE_LABEL = 255
 NUM_CLASSES = 19
 NUM_STEPS = 500 # Number of images in the validation set.
-#RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/GTA2Cityscapes_multi-ed35151c.pth'
-RESTORE_FROM = './model/GTA5_82000.pth'
 SET = 'val'
 
 palette = [128, 64, 128, 244, 35, 232, 70, 70, 70, 102, 102, 156, 190, 153, 153, 153, 153, 153, 250, 170, 30,
@@ -110,4 +109,10 @@ def main():
     print('### EVALUATING FINISHED ###')
 
 if __name__ == '__main__':
+    os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+    memory_gpu = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+    os.system('rm tmp')
+    gpu_target = str(np.argmax(memory_gpu))
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_target
+    print('Training on GPU ' + gpu_target)
     main()

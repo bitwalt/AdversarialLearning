@@ -1,5 +1,6 @@
 import torch.nn as nn
 import numpy as np
+import torch
 
 affine_par = True
 
@@ -215,8 +216,22 @@ class ResNet(nn.Module):
                 {'params': self.get_10x_lr_params(), 'lr': 10 * args.learning_rate}]
 
 
-def Res_Deeplab(num_classes=21):
+def Res_Deeplab(num_classes=21, restore_from=None):
     model = ResNet(Bottleneck, [3, 4, 23, 3], num_classes)
-    return model
+    if restore_from is not None:
+        if restore_from[:4] == 'http':
+            saved_state_dict = model_zoo.load_url(restore_from)
+        else:
+            saved_state_dict = torch.load(restore_from)
+        new_params = model.state_dict().copy()
+        for i in saved_state_dict:
+            i_parts = i.split('.')
+            if not num_classes == 19 or not i_parts[1] == 'layer5':
+                new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
 
+        if restore_from[:4] == './mo':
+            model.load_state_dict(new_params)
+        else:
+            model.load_state_dict(saved_state_dict)
+    return model
 

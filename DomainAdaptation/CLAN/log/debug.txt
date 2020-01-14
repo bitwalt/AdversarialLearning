@@ -1,0 +1,25 @@
+time: 13/01/2020 - 16:23:08
+Training on GPU 0
+###########   TRAINING STARTED  ############
+Iter =      0/     1, loss_seg = 0.1357 loss_adv = 0.0007, loss_weight = 0.0207, loss_D_s = 0.6958 loss_D_t = 0.6905
+Total training time: 0 days, 0 hours, 5 min, 8 sec 
+time: 13/01/2020 - 16:41:38
+Training on GPU 0
+###########   TRAINING STARTED  ############
+time: 13/01/2020 - 16:42:24
+Training on GPU 0
+###########   TRAINING STARTED  ############
+time: 13/01/2020 - 16:43:03
+Training on GPU 0
+###########   TRAINING STARTED  ############
+time: 13/01/2020 - 16:43:38
+Training on GPU 0
+###########   TRAINING STARTED  ############
+Iter =      0/     1, loss_seg = 0.1503 loss_adv = 0.0007, loss_weight = 0.0207, loss_D_s = 0.6882 loss_D_t = 0.6987
+Total training time: 0 days, 0 hours, 5 min, 6 sec 
+time: 13/01/2020 - 16:52:31
+Training on GPU 0
+###########   TRAINING STARTED  ############
+time: 13/01/2020 - 16:53:46
+Training on GPU 0
+###########   TRAINING STARTED  ############
