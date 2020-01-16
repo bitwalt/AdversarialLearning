@@ -19,7 +19,16 @@ from utils.metrics import AverageMeter
 from utils.utils import to_device
 
 # summary
-from tensorboardX import SummaryWriter
+
+class AuxiliaryModel:
+    def __init__(self, model_name=''):
+        cudnn.enabled = True
+
+        # set up model
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = get_aux_net(model_name)(aux_classes=args.aux_classes + 1, classes=args.n_classes)
+        self.model = self.model.to(self.device)
+
 
 class AuxModel:
 
