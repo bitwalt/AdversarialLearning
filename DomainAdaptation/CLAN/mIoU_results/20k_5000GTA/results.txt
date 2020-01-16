@@ -1,0 +1,4 @@
+checkpoint_14000	===> mIoU: 39.44
+checkpoint_16000	===> mIoU: 39.7
+checkpoint_18000	===> mIoU: 38.76
+checkpoint_20000	===> mIoU: 38.32

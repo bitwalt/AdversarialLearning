@@ -75,7 +75,6 @@ SET = 'train'
 EXPERIMENT = '50k_allGTA'
 
 SNAPSHOT_DIR = '/media/data/walteraul_data/snapshots/'
-#SNAPSHOT_DIR = 'snapshots/'
 
 LOG_DIR = 'log'
 
@@ -124,9 +123,6 @@ def get_arguments():
     parser.add_argument("--set", type=str, default=SET, help="choose adaptation set.")
 
     return parser.parse_args()
-
-
-args = get_arguments()
 
 
 def loss_calc(pred, label, device):
@@ -183,19 +179,15 @@ def main():
     device = torch.device("cuda" if not args.cpu else "cpu")
 
     snapshot_dir = os.path.join(args.snapshot_dir, args.experiment)
-    log_dir = os.path.join(args.log_dir, args.experiment)
-    os.makedirs(log_dir, exist_ok=True)
     os.makedirs(snapshot_dir, exist_ok=True)
-
-    log_file = os.path.join(log_dir, 'log.txt')
+    log_file = join(args.log_dir, '%s_log.txt' % args.experiment)
 
     init_log(log_file, args)
 
     # =============================================================================
     # INIT G
     # =============================================================================
-    if MODEL == 'ResNet':
-        model = Res_Deeplab(num_classes=args.num_classes, restore_from=args.restore_from)
+    model = Res_Deeplab(num_classes=args.num_classes, restore_from=args.restore_from)
     model.train()
     model.to(device)
 
@@ -204,7 +196,6 @@ def main():
     # =============================================================================
 
     model_D = FCDiscriminator(num_classes=args.num_classes)
-
     #saved_state_dict_D = torch.load(RESTORE_FROM_D) #for retrain
     #model_D.load_state_dict(saved_state_dict_D)
 
@@ -356,7 +347,7 @@ def main():
             log_message('Iter = {0:6d}/{1:6d}, loss_seg = {2:.4f} loss_adv = {3:.4f}, loss_weight = {4:.4f}, loss_D_s = {5:.4f} loss_D_t = {6:.4f}'.format(
                 i_iter+args.start_from_iter, args.num_steps, loss_seg, loss_adv, loss_weight, loss_D_s, loss_D_t), log_file)
 
-        if (i_iter+args.start_from_iter) % args.save_pred_every == 0 and (i_iter+args.start_from_iter) != 0:
+        if (i_iter+1+args.start_from_iter) % args.save_pred_every == 0 and (i_iter+args.start_from_iter) != 0:
             print('saving weights...')
             torch.save(model.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter+args.start_from_iter+1) + '.pth'))
             torch.save(model_D.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter+args.start_from_iter+1) + '_D.pth'))
@@ -367,6 +358,7 @@ def main():
     print('### Experiment: ' + args.experiment + ' finished ###')
 
 if __name__ == '__main__':
+    args = get_arguments()
     os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
     memory_gpu = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
     os.system('rm tmp')

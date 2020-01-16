@@ -1,6 +1,0 @@
-time: 14/01/2020 - 15:36:30
-Training on GPU 0
-###########   TRAINING STARTED  ############
-Iter =      0/ 10000, loss_seg = 14.0025 loss_adv = 0.0007, loss_weight = 0.0199, loss_D_s = 0.6932 loss_D_t = 0.6932
-Iter =     10/ 10000, loss_seg = 8.2999 loss_adv = 0.0007, loss_weight = 0.0199, loss_D_s = 0.6908 loss_D_t = 0.6953
-Iter =     20/ 10000, loss_seg = 6.2122 loss_adv = 0.0007, loss_weight = 0.0199, loss_D_s = 0.6874 loss_D_t = 0.6988

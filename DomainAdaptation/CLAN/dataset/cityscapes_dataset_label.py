@@ -27,7 +27,7 @@ class cityscapesDataSetLabel(data.Dataset):
     def __getitem__(self, index):
         name = self.img_ids[index]
         image = Image.open(osp.join(self.root, "leftImg8bit/%s/%s" % (self.set, name))).convert('RGB')
-        label = Image.open(osp.join(self.root, self.label_folder+"/%s" %name.split('/')))
+        label = Image.open(osp.join(self.root, self.label_folder+"/%s" % name))
         # resize
         image = image.resize(self.crop_size, Image.BICUBIC)
         image = np.asarray(image, np.float32)
