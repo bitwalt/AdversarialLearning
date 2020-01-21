@@ -1,99 +1,123 @@
 experiment: rotation2k
-
-random_seed: 100
+random_seed: 1234
 mode: train
+method:
+    adversarial: True
+    self: True
 
-source_dir: '/media/data/walteraul_data/datasets/gta5'
-source_list: './dataset/gta5_list/train.txt'
+# segmentation      -> F-F Both False
+# adversarial       -> T-F Classic CLAN network (segmentation + adversarial + weight discrepancy losses)
+# self              -> F-T Segmentation network + Self-supervision task
+# self-adversarial  -> T-T Full losses
+
+dirs:
+    snapshot_dir: '/media/data/walteraul_data/snapshots/'
+    prediction_dir: '/media/data/walteraul_data/results/'
+    results_dir: './results/'
+    log_dir: './log'
 
 
-target_dir: '/media/data/walteraul_data/datasets/cityscapes'
-target_list: './dataset/cityscapes_list/train.txt'
-target_list_val: './dataset/cityscapes_list/val.txt'
+num_classes: 19
+weight_loss: True
+
+restore: False
+start_iter: 0
+
+save_pred_every: 4000
+num_steps: 50000
+
+power: 0.9
+Lambda_aux: 1 # NEEDS TUNING
+Lambda_weight: 0.01
+Lambda_adv: 0.001
+Lambda_local: 40
+Epsilon: 0.4
 
 
-snapshot_dir: '/media/data/walteraul_data/snapshots/'
-prediction_dir: '/media/data/walteraul_data/results/'
-result_dir: './results/'
+networks:
+    segmentation: 'DeepLab'
+    discriminator: 'FCDiscriminator'
+    auxiliary: 'Resnet'
 
+model:
+    name: 'DeepLab'
+    restore_from: './models/DeepLab_resnet_pretrained.pth'
+    optimizer:
+        name: 'sgd'
+        lr: 2.5e-4
+        weight_decay: 0.0005
+        momentum: 0.9
 
-network:
-    segmentation: Deeplab
-    auxiliary: Alexnet
+discriminator:
+    type: 'FC'
+    learning_rate_d: 1e-4
+    restore_from: None
+    optimizer:
+        name: 'adam'
+        lr: 0.0001
+        weight_decay: 0.0005
 
-datasets:
-    src:
-        name: 'GTA'
-        batch_size: 1
-        num_workers: 4
-        iter_size: 1
-        limit: false
-        val_size: 0.1
-        bias_whole_image: 0.7
-        aux_classes: 30
-        img_transform:
-            jitter: 0
-            random_horiz_flip: 0
-            random_resize_crop:
-                size: [222, 222]
-                scale: [0.8, 1.0]
-        jig_transform:
-            tile_random_grayscale: 0.1
-        normalize:
-            mean: [0.485, 0.456, 0.406]
-            std: [0.229, 0.224, 0.225]
-    tar:
-        name: 'cityscapes'
-        batch_size: 1
-        num_workers: 4
-         limit: false
-        aux_classes: 30
-        bias_whole_image: 0.7
-        img_transform:
-            jitter: 0
-            random_horiz_flip: 0
-            random_resize_crop:
-                size: [222, 222]
-                scale: [0.8, 1.0]
-        jig_transform:
-            tile_random_grayscale: 0.1
-        normalize:
-            mean: [0.485, 0.456, 0.406]
-            std: [0.229, 0.224, 0.225]
-
-    test:
-        type: 'jigsaw'
-        name: 'photo'
-        split: test
-        batch_size: 128
-        num_workers: 4
-        limit: false
-        aux_classes: 30
-        img_transform:
-            jitter: 0
-            random_resize_crop:
-                size: [222, 222]
-        normalize:
-            mean: [0.485, 0.456, 0.406]
-            std: [0.229, 0.224, 0.225]
-
-testing:
-    model: ''
-
-training:
-    resume: ''
-    num_print_epoch: 10
-    num_epochs: 30
+auxiliary:
+    name: 'resnet18'
+    mode: 'rotation'
+    n_classes: 4 # UP, DOWN, LEFT, RIGT rotation
+    classes: 19 #classes of cityscapes
+    images_size: [256,256]
     optimizer:
         name: 'sgd'
         lr: 0.001
         weight_decay: 0.0005
         momentum: 0.9
         nesterov: true
+
     lr_scheduler:
         name: step
         step_size: 24 # num_epochs * 0.8
-    src_aux_weight: 0.0
-    tar_aux_weight: 0.0
-    tar_entropy_weight: 0.0
-    only_non_scrambled: true
+
+
+datasets:
+    source:
+        name: 'GTA_V'
+        source_dir: '/media/data/walteraul_data/datasets/gta5'
+        source_list: './dataset/gta5_list/train.txt'
+        batch_size: 1
+        num_steps: 50000
+        iter_size: 1
+        num_workers: 4
+        images_size: [1280, 720]
+        img_transform:
+            jitter: 0
+            random_horiz_flip: 0
+            random_resize_crop:
+                size: [222, 222]
+                scale: [0.8, 1.0]
+        mean: [104.007, 116.669, 122.679]
+
+    target:
+        name: 'cityscapes'
+        target_dir: '/media/data/walteraul_data/datasets/cityscapes'
+        target_list: './dataset/cityscapes_list/train.txt'
+        set: 'train'
+        batch_size: 1
+        num_steps: 50000
+        iter_size: 1
+        num_workers: 4
+        images_size: [1024, 512]
+        img_transform:
+            jitter: 0
+            random_horiz_flip: 0
+            random_resize_crop:
+                size: [222, 222]
+                scale: [0.8, 1.0]
+        mean: [104.007, 116.669, 122.679]
+
+        val:
+            set: 'val'
+            list: './dataset/cityscapes_list/val.txt'
+            images_size: (1024, 512)
+
+        test:
+            set: 'test'
+            list: './dataset/cityscapes_list/test.txt'
+            batch_size: 1
+            num_workers: 4

@@ -2,6 +2,8 @@ import json
 import yaml
 from easydict import EasyDict
 import os
+from os.path import join
+from utils.dirs import create_dirs
 
 def get_config_from_json(json_file):
     """
@@ -46,8 +48,11 @@ def process_config(config_file):
     else:
         raise Exception("Only .json and .yaml are supported!")
 
-    config.cache_dir = os.path.join("cache", config.exp_name)
-    config.model_dir = os.path.join("cache", config.exp_name, 'models')
-    config.log_dir = os.path.join("cache", config.exp_name, 'logs')
-    config.img_dir = os.path.join("cache", config.exp_name, 'imgs')
+    create_dirs([config.dirs.snapshot_dir, config.dirs.prediction_dir, config.dirs.results_dir, config.dirs.log_dir], config.experiment)
+
+    config.snapshot_dir = join(config.dirs.snapshot_dir, config.experiment)
+    config.prediction_dir = join(config.dirs.prediction_dir, config.experiment)
+    config.results_dir = join(config.dirs.results_dir, config.experiment)
+    config.log_dir = join(config.dirs.log_dir, config.experiment)
+
     return config

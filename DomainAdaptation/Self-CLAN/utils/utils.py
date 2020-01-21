@@ -9,9 +9,11 @@ import numpy as np
 from PIL import Image, ImageDraw
 from collections import OrderedDict
 
+CONFIG = './config/gta_to_cityscapes.yaml'
+
 def get_args():
     argparser = argparse.ArgumentParser(description=__doc__)
-    argparser.add_argument( '-c', '--config', metavar='C', default='None', help='The Configuration file')
+    argparser.add_argument( '-c', '--config', metavar='C', default=CONFIG, help='The Configuration file')
     args = argparser.parse_args()
     return args
 

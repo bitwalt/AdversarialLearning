@@ -12,7 +12,7 @@ nets_map = {
 }
 
 
-def get_aux_net(name):
+def get_auxiliary_net(name):
     if name not in nets_map:
         raise ValueError('Name of network unknown %s' % name)
 

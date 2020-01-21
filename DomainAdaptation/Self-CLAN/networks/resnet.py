@@ -4,10 +4,10 @@ from torchvision.models.resnet import BasicBlock, model_urls, Bottleneck
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers, aux_classes=1000, classes=100, domains=3):
+    def __init__(self, block, layers, input_dim, aux_classes=1000, classes=100, domains=3):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+        self.conv1 = nn.Conv2d(input_dim, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
@@ -17,8 +17,8 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AvgPool2d(7, stride=1)
-        self.aux_classifier = nn.Linear(512 * block.expansion, aux_classes)
-        self.class_classifier = nn.Linear(512 * block.expansion, classes)
+        self.aux_classifier = nn.Linear(512 * aux_classes, aux_classes)
+        #self.class_classifier = nn.Linear(512 * block.expansion, classes)
         #self.domain_classifier = nn.Linear(512 * block.expansion, domains)
 
         for m in self.modules():
@@ -49,6 +49,7 @@ class ResNet(nn.Module):
         return False
 
     def forward(self, x, **kwargs):
+        
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -58,10 +59,9 @@ class ResNet(nn.Module):
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
-
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        return self.aux_classifier(x), self.class_classifier(x)
+        return self.aux_classifier(x)
 
 
 def resnet18(pretrained=True, **kwargs):
