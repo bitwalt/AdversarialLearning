@@ -15,7 +15,6 @@ def channel_1toN(img, num_channel):
         T[i] = torch.from_numpy(np.logical_not(np.logical_xor(layer.numpy(), mask.numpy())).astype(int))
     return T.float()
 
-
 class WeightedBCEWithLogitsLoss(nn.Module):
     
     def __init__(self, size_average=True):

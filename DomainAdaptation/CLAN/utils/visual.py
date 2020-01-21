@@ -66,3 +66,12 @@ def save_image(image_numpy, image_path):
     image_pil = Image.fromarray(image_numpy)
     image_pil.save(image_path)
     
+
+def crop(image, nw=3, nh=3):
+    '''
+    Input  a tensor [1, nClasses, W, H]
+    Output a tensor [n, nClasses, W/nw, H/nh]
+    '''
+    h = image.size(2)
+    w = image.size(3)
+
