@@ -21,6 +21,8 @@ from dataset.synthia_dataset import SYNTHIADataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
 from dataset.cityscapes_dataset_label import cityscapesDataSetLabel
 
+from dataset.cityscapes import Cityscapes
+
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 
 MODEL = 'ResNet'
@@ -41,8 +43,8 @@ SAVE_PRED_EVERY = 4000
 WEIGHT_DECAY = 0.0005
 LEARNING_RATE = 2.5e-4
 LEARNING_RATE_D = 1e-4
-NUM_STEPS = 50000
-NUM_STEPS_STOP = 50000  # Use damping instead of early stopping
+NUM_STEPS = 48001
+NUM_STEPS_STOP = 48001  # Use damping instead of early stopping
 PREHEAT_STEPS = int(NUM_STEPS_STOP / 20)
 POWER = 0.9
 RANDOM_SEED = 1234
@@ -54,14 +56,14 @@ Epsilon = 0.4
 SOURCE = 'GTA5'
 INPUT_SIZE_SOURCE = [1280, 720]
 DATA_DIRECTORY = '/media/data/walteraul_data/datasets/gta5'
-DATA_LIST_PATH = './dataset/gta5_list/train2000.txt'
+DATA_LIST_PATH = './dataset/gta5_list/train10000.txt'
 
 TARGET = 'cityscapes'
 INPUT_SIZE_TARGET = [1024, 512]
 DATA_DIRECTORY_TARGET = '/media/data/walteraul_data/datasets/cityscapes'
 DATA_LIST_PATH_TARGET = './dataset/cityscapes_list/train.txt'
 DATA_LABEL_PATH='/media/data/walteraul_data/datasets/cityscapes/gtFine/train'
-
+DATA_LIST_LABEL_TARGET = './dataset/cityscapes_list/train_label.txt'
 SET = 'train'
 
 EXPERIMENT = 'DeepLab_Cityscapes'
@@ -87,6 +89,8 @@ def get_arguments():
     parser.add_argument("--input-size-source", type=str, default=INPUT_SIZE_SOURCE, help="Comma-separated string with height and width of source images.")
     parser.add_argument("--data-dir-target", type=str, default=DATA_DIRECTORY_TARGET, help="Path to the directory containing the target dataset.")
     parser.add_argument("--data-list-target", type=str, default=DATA_LIST_PATH_TARGET, help="Path to the file listing the images in the target dataset.")
+    parser.add_argument("--data-list-label-target", type=str, default=DATA_LIST_LABEL_TARGET,
+                        help="Path to the file listing the images in the target dataset.")
     parser.add_argument("--label-dir", type=str, default=DATA_LABEL_PATH, help="Path to the file listing the images in the target dataset.")
 
     parser.add_argument("--input-size-target", type=str, default=INPUT_SIZE_TARGET, help="Comma-separated string with height and width of target images.")
@@ -124,6 +128,7 @@ def loss_calc(pred, label, device):
     """
     # out shape batch_size x channels x h x w -> batch_size x channels x h x w
     # label shape h x w x 1 x batch_size  -> batch_size x 1 x h x w
+    #label = label.long().to(device)
     label = label.long().to(device)
     criterion = CrossEntropy2d(NUM_CLASSES).to(device)
     return criterion(pred, label)
@@ -170,22 +175,24 @@ def main():
     model.to(device)
 
     # DataLoaders
-    trainloader = data.DataLoader(GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
-                                            crop_size=args.input_size_source, scale=True, mirror=True, mean=IMG_MEAN),
-                                            batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
-    trainloader_iter = enumerate(trainloader)
+ #  trainloader = data.DataLoader(GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
+ #                                         crop_size=args.input_size_source, scale=True, mirror=True, mean=IMG_MEAN),
+ #                                          batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
+ #   trainloader_iter = enumerate(trainloader)
 
-#   trainloader = data.DataLoader(cityscapesDataSetLabel(args.data_dir_target, args.data_list_target,
-#                                                   max_iters=args.num_steps * args.iter_size * args.batch_size, crop_size=args.input_size_target,
-#                                                   mean=IMG_MEAN, set=args.set), batch_size=args.batch_size, shuffle=True,num_workers=args.num_workers, pin_memory=True)
-#   trainloader_iter = enumerate(trainloader)
+    trainloader = data.DataLoader(cityscapesDataSetLabel(args.data_dir_target, './dataset/cityscapes_list/info.json', args.data_list_target,args.data_list_label_target,
+                                                    max_iters=args.num_steps * args.iter_size * args.batch_size, crop_size=args.input_size_target,
+                                                    mean=IMG_MEAN, set=args.set), batch_size=args.batch_size, shuffle=True,num_workers=args.num_workers, pin_memory=True)
+
+    trainloader_iter = enumerate(trainloader)
 
     # Optimizers
     optimizer = optim.SGD(model.optim_parameters(args), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
-    interp_source = nn.Upsample(size=(args.input_size_source[1], args.input_size_source[0]), mode='bilinear', align_corners=True)
-
+    #interp_source = nn.Upsample(size=(args.input_size_source[1], args.input_size_source[0]), mode='bilinear', align_corners=True)
+    interp_target = nn.Upsample(size=(args.input_size_target[1], args.input_size_target[0]), mode='bilinear',
+                                align_corners=True)
 
     # ======================================================================================
     # Start training
@@ -204,14 +211,13 @@ def main():
 
         # Train with Source
         _, batch = next(trainloader_iter)
-        images_s, labels_s, _, _ = batch
+        images_s, labels_s = batch
         images_s = images_s.to(device)
 
         pred_source1, pred_source2 = model(images_s)
 
-        pred_source1 = interp_source(pred_source1)
-        pred_source2 = interp_source(pred_source2)
-
+        pred_source1 = interp_target(pred_source1)
+        pred_source2 = interp_target(pred_source2)
         # Segmentation Loss
         loss_seg = (loss_calc(pred_source1, labels_s, device) + loss_calc(pred_source2, labels_s, device))
         loss_seg.backward()
@@ -219,15 +225,16 @@ def main():
         optimizer.step()
 
         if i_iter % 10 == 0:
-            log_message('Iter = {0:6d}/{1:6d}, loss_seg = {2:.4f}'.format(i_iter, args.num_steps, loss_seg), log_file)
+            log_message('Iter = {0:6d}/{1:6d}, loss_seg = {2:.4f}'.format(i_iter, args.num_steps-1, loss_seg), log_file)
 
-        if (i_iter) % args.save_pred_every == 0 and i_iter != 0:
+        if (i_iter % args.save_pred_every == 0 and i_iter != 0) or i_iter == args.num_steps-1:
             print('saving weights...')
-            torch.save(model.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter+1) + '.pth'))
+            torch.save(model.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
 
     end = time.time()
     log_message('Total training time: {} days, {} hours, {} min, {} sec '.format(
         int((end - start) / 86400), int((end - start)/3600), int((end - start)/60%60), int((end - start)%60)), log_file)
+    print('### Experiment: ' + args.experiment + ' Finished ###')
 
 if __name__ == '__main__':
     os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')

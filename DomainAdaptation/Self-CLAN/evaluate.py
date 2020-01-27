@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 from torch.utils import data, model_zoo
-from model.CLAN_G import Res_Deeplab
+from models.CLAN_G import Res_Deeplab
 from dataset.cityscapes_dataset import cityscapesDataSet
 import os
 from PIL import Image
@@ -46,15 +46,15 @@ def get_arguments():
       A list of parsed arguments.
     """
     parser = argparse.ArgumentParser(description="DeepLab-ResNet Network")
-    parser.add_argument("--data-dir", type=str, default=DATA_DIRECTORY, help="Path to the directory containing the Cityscapes dataset.")
-    parser.add_argument("--data-list", type=str, default=DATA_LIST_PATH, help="Path to the file listing the images in the dataset.")
-    parser.add_argument("--ignore-label", type=int, default=IGNORE_LABEL, help="The index of the label to ignore during the training.")
-    parser.add_argument("--num-classes", type=int, default=NUM_CLASSES, help="Number of classes to predict (including background).")
-    parser.add_argument("--restore-from", type=str, default=RESTORE_FROM, help="Where restore model parameters from.")
-    parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
-    parser.add_argument("--gpu", type=int, default=0, help="choose gpu device.")
-    parser.add_argument("--set", type=str, default=SET, help="choose evaluation set.")
-    parser.add_argument("--save", type=str, default=SAVE_PATH, help="Path to save result.")
+    parser.add_argument("-data-dir", type=str, default=DATA_DIRECTORY, help="Path to the directory containing the Cityscapes dataset.")
+    parser.add_argument("-data-list", type=str, default=DATA_LIST_PATH, help="Path to the file listing the images in the dataset.")
+    parser.add_argument("-ignore-label", type=int, default=IGNORE_LABEL, help="The index of the label to ignore during the training.")
+    parser.add_argument("-num-classes", type=int, default=NUM_CLASSES, help="Number of classes to predict (including background).")
+    parser.add_argument("-fromm", type=str, default=RESTORE_FROM, help="Where restore model parameters from.")
+    parser.add_argument("-cpu", action='store_true', help="choose to use cpu device.")
+    parser.add_argument("-gpu", type=int, default=0, help="choose gpu device.")
+    parser.add_argument("-set", type=str, default=SET, help="choose evaluation set.")
+    parser.add_argument("-save", type=str, default=SAVE_PATH, help="Path to save result.")
     return parser.parse_args()
 
 
@@ -69,7 +69,7 @@ def main():
 
     model = Res_Deeplab(num_classes=args.num_classes)
 
-    saved_state_dict = torch.load(args.restore_from)
+    saved_state_dict = torch.load(args.fromm)
     model.load_state_dict(saved_state_dict)
 
     model.eval()

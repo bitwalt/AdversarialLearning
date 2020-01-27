@@ -65,15 +65,14 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir='', log_file=''):
 def main(args):
     os.makedirs(args.log_dir, exist_ok=True)
     log_file = join(args.log_dir, 'result.txt')
-    init_log(log_file)
+    init_log(log_file, args)
     compute_mIoU(args.gt_dir, args.pred_dir, args.devkit_dir, log_file)
 
 
 LABEL_DIR = '/media/data/walteraul_data/datasets/cityscapes/gtFine/val'
 
-EXPERIMENT = '10k_5000'
-PRED_DIR = '/media/data/walteraul_data/results/10k_5000/'
-LOG_DIR = 'results/10k_5000/'
+PRED_DIR = '/media/data/walteraul_data/results/CLAN_10k_GTA/48000'
+LOG_DIR = 'results/CLAN_10K_GTA/'
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

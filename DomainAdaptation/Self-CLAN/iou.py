@@ -23,11 +23,17 @@ def label_mapping(input, mapping):
     return np.array(output, dtype=np.int64)
 
 
-def compute_mIoU(gt_dir, pred_dir, devkit_dir='', log_file=''):
+def compute_mIoU(current_iter, gt_dir, pred_dir, json_file, devkit_dir, log_dir=''):
     """
     Compute IoU given the predicted colorized images and 
     """
-    with open(join(devkit_dir, 'info.json'), 'r') as fp:
+    new_log_dir = join(log_dir, 'mIoUs')
+    os.makedirs(new_log_dir, exist_ok=True)
+    log_file = join(new_log_dir, '%s.txt' % str(current_iter))
+
+    f = open(join(log_dir, 'results.txt'), 'a+')
+
+    with open(join(json_file), 'r') as fp:
         info = json.load(fp)
     num_classes = np.int(info['classes'])
     log_message('Num classes: ' + str(num_classes), log_file)
@@ -56,24 +62,27 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir='', log_file=''):
             log_message('{:d} / {:d}: {:0.2f}'.format(ind, len(gt_imgs), 100 * np.mean(per_class_iu(hist))), log_file)
 
     mIoUs = per_class_iu(hist)
+
+    mIoU = str(round(np.nanmean(mIoUs) * 100, 2))
     for ind_class in range(num_classes):
         log_message('===>' + name_classes[ind_class] + ':\t' + str(round(mIoUs[ind_class] * 100, 2)), log_file)
-    log_message('===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2)), log_file)
+    log_message('===> mIoU: ' + mIoU, log_file)
+    f.write('step_{0:d}'.format(current_iter) + '\t\t===> mIoU: ' + mIoU + '\n')
     return mIoUs
 
 
 def main(args):
     os.makedirs(args.log_dir, exist_ok=True)
     log_file = join(args.log_dir, 'result.txt')
-    init_log(log_file)
+    init_log(log_file, args)
     compute_mIoU(args.gt_dir, args.pred_dir, args.devkit_dir, log_file)
 
 
 LABEL_DIR = '/media/data/walteraul_data/datasets/cityscapes/gtFine/val'
 
-EXPERIMENT = '10k_5000'
-PRED_DIR = '/media/data/walteraul_data/results/10k_5000/'
-LOG_DIR = 'results/10k_5000/'
+EXPERIMENT = '12k_step_selfclan'
+PRED_DIR = '/media/data/walteraul_data/results/SelfCLAN12k_step'
+LOG_DIR = 'results/12kstep'
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

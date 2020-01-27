@@ -11,8 +11,8 @@ import torch.nn as nn
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
-SAVE_PATH = '/media/data/walteraul_data/results/10k_5000GTA/checkpoint10000' # save prediction here
-RESTORE_FROM = './snapshots/10k_5000GTA/GTA5_10000.pth'          # Restore from this checkpoint
+SAVE_PATH = '/media/data/walteraul_data/results/CLAN_10k_GTA/48000' # save prediction here
+RESTORE_FROM = '/media/data/walteraul_data/snapshots/CLAN_10k_GTA/GTA5_48000.pth'          # Restore from this checkpoint
 
 DATA_DIRECTORY = '/media/data/walteraul_data/datasets/cityscapes'
 DATA_LIST_PATH = './dataset/cityscapes_list/val.txt'

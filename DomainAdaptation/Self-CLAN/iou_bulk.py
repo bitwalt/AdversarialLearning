@@ -6,6 +6,18 @@ from os.path import join
 import csv
 import os
 
+
+LABEL_DIR = '/media/data/walteraul_data/datasets/cityscapes/gtFine/val'
+PRED_DIR = '/media/data/walteraul_data/results/'
+LOG_DIR = 'mIoU_results/'
+
+###
+EXPERIMENT = '20k_5000GTA'
+###
+SAVE_STEP = 4000
+
+
+
 def fast_hist(a, b, n):
     k = (a >= 0) & (a < n)
     return np.bincount(n * a[k].astype(int) + b[k], minlength=n ** 2).reshape(n, n)
@@ -24,7 +36,7 @@ def label_mapping(input, mapping):
 
 def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
     """
-    Compute IoU given the predicted colorized images and 
+    Compute IoU given the predicted colorized images and
     """
     with open(join(devkit_dir, 'info.json'), 'r') as fp:
       info = json.load(fp)
@@ -62,25 +74,17 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
 def main(args):
 
     pred_dir = join(args.pred_dir, args.experiment)
-    log_dir = join(args.log_dir, args.experiment)
-    os.makedirs(log_dir, exist_ok=True)
-    log_file = join(log_dir, 'results.txt')
+    log_file = join(args.log_dir, '%s.txt' % args.experiment)
+
+    n_files = len([name for name in os.listdir(pred_dir)])
 
     with open(log_file, "w+", newline="") as file:
-        for i in range(6, 10):
-            print('### Scoring prediction ' + str(i+1) + '/5 ###')
-            pred_i_dir = join(pred_dir, '{0:d}'.format((i+1) * 2000))
+        for i in range(1, n_files+1):
+            print('### Scoring prediction ' + str(i) + '/' + str(n_files) + ' ###')
+            pred_i_dir = join(pred_dir, '{0:d}'.format(i * args.save_step))
             mIoU = compute_mIoU(args.gt_dir, pred_i_dir, args.devkit_dir)
-            file.write('checkpoint_{0:d}'.format((i+1) * 2000) + '\t===> mIoU: ' + mIoU + '\n')
+            file.write('step_{0:d}'.format(i * args.save_step) + '\t\t===> mIoU: ' + mIoU + '\n')
 
-
-LABEL_DIR = '/media/data/walteraul_data/datasets/cityscapes/gtFine/val'
-PRED_DIR = '/media/data/walteraul_data/results/'
-LOG_DIR = 'mIoU_results/'
-
-###
-EXPERIMENT = '20k_5000GTA'
-###
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -89,6 +93,7 @@ if __name__ == "__main__":
     parser.add_argument('--devkit_dir', default='dataset/cityscapes_list', help='base directory of cityscapes')
     parser.add_argument('--log_dir', default=LOG_DIR, help='log file directory')
     parser.add_argument("--experiment", type=str, default=EXPERIMENT, help="Experiment name")
+    parser.add_argument("--save_step", type=str, default=SAVE_STEP, help="Number of iter for each checkpoint")
     args = parser.parse_args()
 
     main(args)

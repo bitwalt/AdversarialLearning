@@ -11,23 +11,29 @@ from collections import OrderedDict
 
 CONFIG = './config/gta_to_cityscapes.yaml'
 
+
 def get_args():
     argparser = argparse.ArgumentParser(description=__doc__)
-    argparser.add_argument( '-c', '--config', metavar='C', default=CONFIG, help='The Configuration file')
+    argparser.add_argument('-c', '--config', metavar='C', default=CONFIG, help='The Configuration file')
+    argparser.add_argument('-e', type=str, help='Experiment name')
     args = argparser.parse_args()
     return args
 
-def to_device(input, device):
-    if torch.is_tensor(input):
-        return input.to(device=device)
-    elif isinstance(input, str):
-        return input
-    elif isinstance(input, collections.Mapping):
-        return {k: to_device(sample, device=device) for k, sample in input.items()}
-    elif isinstance(input, collections.Sequence):
-        return [to_device(sample, device=device) for sample in input]
+
+def rotate_tensor(x, rot):
+
+    if rot == 0:
+        img_rt = x
+    elif rot == 90:
+        img_rt = x.transpose(2, 3)
+    elif rot == 180:
+        img_rt = x.flip(2)
+    elif rot == 270:
+        img_rt = x.transpose(2, 3).flip(3)
     else:
-        raise TypeError("Input must contain tensor, dict or list, found {type(input)}")
+        raise ValueError('Rotation angles should be in [0, 90, 180, 270]')
+    return img_rt
+
 
 def cls_acc(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
@@ -82,21 +88,3 @@ def convert_state_dict(state_dict):
         name = k[7:]  # remove `module.`
         new_state_dict[name] = v
     return new_state_dict
-
-def get_logger(logdir, name):
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
-
-    ts = str(datetime.datetime.now()).split(".")[0].replace(" ", "_")
-    ts = ts.replace(":", "_").replace("-", "_")
-    file_path = os.path.join(logdir, "run_{}.log".format(ts))
-    file_hdlr = logging.FileHandler(file_path)
-    file_hdlr.setFormatter(formatter)
-
-    strm_hdlr = logging.StreamHandler(sys.stdout)
-    strm_hdlr.setFormatter(formatter)
-
-    logger.addHandler(file_hdlr)
-    logger.addHandler(strm_hdlr)
-    return logger

@@ -20,6 +20,8 @@ RESTORE_FROM = '/media/data/walteraul_data/snapshots/'
 ###
 EXPERIMENT = '20k_5000GTA'
 SAVE_STEP = 4000
+DISCR = False #if true means that in the folder there are also discriminator savings
+AUX = False
 ###
 
 
@@ -80,7 +82,9 @@ def get_arguments():
     parser.add_argument("--set", type=str, default=SET,  help="choose evaluation set.")
     parser.add_argument("--save", type=str, default=SAVE_PATH, help="Path to save result.")
     parser.add_argument("--experiment", type=str, default=EXPERIMENT, help="Experiment name")
-    parser.add_argument("--save_step", type=str, default=SAVE_STEP, help="Number of iter for each checkpoint")
+    parser.add_argument("--save_step", type=int, default=SAVE_STEP, help="Number of iter for each checkpoint")
+    parser.add_argument("--d", type=bool, default=DISCR, help="Discriminator savings are presents")
+    parser.add_argument("--a", type=bool, default=AUX, help="Auxiliary task savings are presents")
     return parser.parse_args()
 
 
@@ -96,6 +100,11 @@ def main(args):
 
 
     n_files = len([name for name in os.listdir(model_dir)])
+
+    if args.d:
+        n_files = int(n_files/2)
+    if args.a:
+        n_files = int(n_files / 3)
 
     for i in range(1, n_files+1):
         model_path = os.path.join(model_dir, 'GTA5_{0:d}.pth'.format(i*args.save_step))
@@ -122,7 +131,7 @@ def main(args):
                 if index % 100 == 0:
                     print('%d processed' % index)
                 image, _, name = batch
-                output1, output2 = model(Variable(image).to(device))
+                output1, output2 = model(image.to(device))
     
                 output = interp(output1 + output2).cpu().data[0].numpy()
                 

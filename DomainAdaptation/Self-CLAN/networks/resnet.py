@@ -49,7 +49,7 @@ class ResNet(nn.Module):
         return False
 
     def forward(self, x, **kwargs):
-        
+
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)

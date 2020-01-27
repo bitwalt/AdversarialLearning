@@ -4,6 +4,11 @@ from easydict import EasyDict
 import os
 from os.path import join
 from utils.dirs import create_dirs
+from shutil import copyfile
+import argparse
+
+CONFIG = './config/gta_to_cityscapes.yaml'
+
 
 def get_config_from_json(json_file):
     """
@@ -23,6 +28,7 @@ def get_config_from_json(json_file):
 
     return config, config_dict
 
+
 def get_config_from_yaml(yaml_file):
     """
     Get the config from yaml file
@@ -34,11 +40,20 @@ def get_config_from_yaml(yaml_file):
     """
 
     with open(yaml_file) as fp:
-        config_dict = yaml.load(fp)
+        config_dict = yaml.load(fp, Loader=yaml.FullLoader)
 
     # convert the dictionary to a namespace using bunch lib
     config = EasyDict(config_dict)
     return config, config_dict
+
+
+def get_args():
+    argparser = argparse.ArgumentParser(description=__doc__)
+    argparser.add_argument('-c', '--config', metavar='C', default=CONFIG, help='The Configuration file')
+    argparser.add_argument('-e', type=str, help='Experiment name')
+    args = argparser.parse_args()
+    return args
+
 
 def process_config(config_file):
     if config_file.endswith('json'):
@@ -55,4 +70,10 @@ def process_config(config_file):
     config.results_dir = join(config.dirs.results_dir, config.experiment)
     config.log_dir = join(config.dirs.log_dir, config.experiment)
 
+    dest = join(config.log_dir, 'config.yaml')
+    copyfile(config_file, dest)
+
     return config
+
+
+

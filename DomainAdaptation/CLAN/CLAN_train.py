@@ -36,11 +36,11 @@ RETRAIN = True
 RESTORE_FROM = './model/DeepLab_resnet_pretrained.pth'
 # RESTORE_FROM_D = './snapshots/GTA2Cityscapes_CVPR_Syn0820_Wg00005weight005_dampingx2/GTA5_36000_D.pth' #For retrain
 
-#RESTORE_FROM = './snapshots/10k_5000GTA/GTA5_10000.pth'
-#RESTORE_FROM_D = './snapshots/10k_5000GTA/GTA5_10000_D.pth'
+RESTORE_FROM = '/media/data/walteraul_data/snapshots/CLAN_2k_GTA/GTA5_20001.pth'
+RESTORE_FROM_D = '/media/data/walteraul_data/snapshots/CLAN_2k_GTA/GTA5_20001_D.pth'
 
 ###
-START_FROM_ITER = 0 #Default 0
+START_FROM_ITER = 20000 #Default 0
 ####
 
 SAVE_NUM_IMAGES = 2
@@ -50,8 +50,8 @@ SAVE_PRED_EVERY = 4000
 WEIGHT_DECAY = 0.0005
 LEARNING_RATE = 2.5e-4
 LEARNING_RATE_D = 1e-4
-NUM_STEPS = 50000
-NUM_STEPS_STOP = 50000  # Use damping instead of early stopping
+NUM_STEPS = 48000
+NUM_STEPS_STOP = 48000  # Use damping instead of early stopping
 PREHEAT_STEPS = int(NUM_STEPS_STOP / 20)
 POWER = 0.9
 RANDOM_SEED = 1234
@@ -63,7 +63,7 @@ Epsilon = 0.4
 SOURCE = 'GTA5'
 INPUT_SIZE_SOURCE = [1280, 720]
 DATA_DIRECTORY = '/media/data/walteraul_data/datasets/gta5'
-DATA_LIST_PATH = './dataset/gta5_list/train.txt'
+DATA_LIST_PATH = './dataset/gta5_list/train10000.txt'
 
 TARGET = 'cityscapes'
 INPUT_SIZE_TARGET = [1024, 512]
@@ -72,7 +72,7 @@ DATA_LIST_PATH_TARGET = './dataset/cityscapes_list/train.txt'
 
 SET = 'train'
 
-EXPERIMENT = '50k_allGTA'
+EXPERIMENT = 'CLAN_10k_GTA'
 
 SNAPSHOT_DIR = '/media/data/walteraul_data/snapshots/'
 #SNAPSHOT_DIR = 'snapshots/'
@@ -205,8 +205,8 @@ def main():
 
     model_D = FCDiscriminator(num_classes=args.num_classes)
 
-    #saved_state_dict_D = torch.load(RESTORE_FROM_D) #for retrain
-    #model_D.load_state_dict(saved_state_dict_D)
+    saved_state_dict_D = torch.load(RESTORE_FROM_D) #for retrain
+    model_D.load_state_dict(saved_state_dict_D)
 
     model_D.train()
     model_D.to(device)
@@ -245,15 +245,15 @@ def main():
     print('###########   TRAINING STARTED  ############')
     start = time.time()
 
-    for i_iter in range(args.num_steps-args.start_from_iter):
+    for i_iter in range(args.start_from_iter, args.num_steps):
 
         optimizer.zero_grad()
-        adjust_learning_rate(optimizer, i_iter+args.start_from_iter)
+        adjust_learning_rate(optimizer, i_iter)
 
         optimizer_D.zero_grad()
-        adjust_learning_rate_D(optimizer_D, i_iter+args.start_from_iter)
+        adjust_learning_rate_D(optimizer_D, i_iter)
 
-        damping = (1 - (i_iter+args.start_from_iter) / NUM_STEPS)
+        damping = (1 - (i_iter) / NUM_STEPS)
 
         # ======================================================================================
         # train G
@@ -352,14 +352,14 @@ def main():
         optimizer.step()
         optimizer_D.step()
 
-        if (i_iter+args.start_from_iter) % 10 == 0:
+        if (i_iter) % 10 == 0:
             log_message('Iter = {0:6d}/{1:6d}, loss_seg = {2:.4f} loss_adv = {3:.4f}, loss_weight = {4:.4f}, loss_D_s = {5:.4f} loss_D_t = {6:.4f}'.format(
-                i_iter+args.start_from_iter, args.num_steps, loss_seg, loss_adv, loss_weight, loss_D_s, loss_D_t), log_file)
+                i_iter, args.num_steps, loss_seg, loss_adv, loss_weight, loss_D_s, loss_D_t), log_file)
 
-        if (i_iter+args.start_from_iter) % args.save_pred_every == 0 and (i_iter+args.start_from_iter) != 0:
+        if (i_iter % args.save_pred_every == 0 and i_iter != 0) or i_iter == args.num_steps-1:
             print('saving weights...')
-            torch.save(model.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter+args.start_from_iter+1) + '.pth'))
-            torch.save(model_D.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter+args.start_from_iter+1) + '_D.pth'))
+            torch.save(model.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
+            torch.save(model_D.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter) + '_D.pth'))
 
     end = time.time()
     log_message('Total training time: {} days, {} hours, {} min, {} sec '.format(

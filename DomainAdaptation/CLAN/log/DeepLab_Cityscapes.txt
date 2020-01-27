@@ -1,0 +1,79 @@
+time: 21/01/2020 - 10:12:50
+
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+###########   TRAINING STARTED  ############
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+###########   TRAINING STARTED  ############
+Iter =      0/ 50000, loss_seg = 10.8774
