@@ -15,13 +15,15 @@ from utils.optimizer import get_optimizer
 from networks import get_auxiliary_net
 
 from models.CLAN_G import Res_Deeplab
+from models.erfnet_imagenet import ERFNet
 from models.Discriminators import Discriminator
 
-from utils.loss import CrossEntropy2d, WeightedBCEWithLogitsLoss
+from utils.loss import WeightedBCEWithLogitsLoss, loss_calc
 from utils.loss import save_losses_plot
 from utils.utils import rotate_tensor
-from utils.visual import colorize_mask
+from utils.visual import colorize_mask, save_segmentations
 from iou import compute_mIoU
+
 
 class Self_CLAN:
     def __init__(self, args, logger):
@@ -37,7 +39,7 @@ class Self_CLAN:
         self.bce_loss = torch.nn.BCEWithLogitsLoss()
         self.weighted_bce_loss = WeightedBCEWithLogitsLoss()
         self.save_path = args.prediction_dir
-        self.losses = {'seg': list(), 'adv': list(), 'weight': list(), 'ds': list(), 'dt': list(), 'aux': list()}
+        self.losses = {'seg': list(),'seg_t': list(), 'adv': list(), 'weight': list(), 'ds': list(), 'dt': list(), 'aux': list()}
         self.rotations = [0, 90, 180, 270]
 
         cudnn.enabled = True
@@ -46,44 +48,41 @@ class Self_CLAN:
         # set up models
         if args.networks.segmentation == 'DeepLab':
             self.model = Res_Deeplab(num_classes=args.num_classes, restore_from=args.model.restore_from)
-            self.model = self.model.to(self.device)
-            optimizer = get_optimizer(args.model.optimizer)
-            optimizer_params = {k: v for k, v in args.model.optimizer.items() if k != "name"}
-            self.optimizer = optimizer(self.model.parameters(), **optimizer_params)
-        # ELIF -- ADD HERE NEW SEGMENTATION NET -- ex. ErfNet
+            #optimizer = get_optimizer(args.model.optimizer)
+            #optimizer_params = {k: v for k, v in args.model.optimizer.items() if k != "name"}
+            #self.optimizer = optimizer(self.model.parameters(), **optimizer_params)
+
+            self.optimizer = optim.SGD(self.model.optim_parameters(args.model.optimizer), lr=args.model.optimizer.lr, momentum=args.model.optimizer.momentum, weight_decay=args.model.optimizer.weight_decay)
+        if args.networks.segmentation == 'ErfNet':
+            self.model = ERFNet(args.num_classes)
+            self.optimizer = optim.SGD(self.model.optim_parameters(args.model.optimizer), lr=args.model.optimizer.lr, momentum=args.model.optimizer.momentum, weight_decay=args.model.optimizer.weight_decay)
 
         if args.method.adversarial:
             self.model_D = Discriminator(type_d=args.discriminator.type, num_classes=args.num_classes, restore=args.restore, restore_from=args.discriminator.restore_from)
-            self.model_D = self.model_D.to(self.device)
-            optimizer_D = get_optimizer(args.discriminator.optimizer)
-            optimizer_params = {k: v for k, v in args.discriminator.optimizer.items() if k != "name"}
-            self.optimizer_D = optimizer_D(self.model_D.parameters(), **optimizer_params)
-
+            #optimizer_D = get_optimizer(args.discriminator.optimizer)
+            #optimizer_params = {k: v for k, v in args.discriminator.optimizer.items() if k != "name"}
+            #self.optimizer_D = optimizer_D(self.model_D.parameters(), **optimizer_params)
+            self.optimizer_D = optim.Adam(self.model_D.parameters(), lr=args.discriminator.optimizer.lr, betas=(0.9, 0.99))
         if args.method.self:
-            self.model_A = get_auxiliary_net(args.auxiliary.name)(input_dim=args.auxiliary.classes, aux_classes=args.auxiliary.n_classes, classes=args.auxiliary.classes, pretrained=False)
+            self.model_A = get_auxiliary_net(args.auxiliary.name)(input_dim=args.auxiliary.classes, aux_classes=args.auxiliary.n_classes, classes=args.auxiliary.classes)
+            #saved_state_dict = torch.load(args.auxiliary.restore_from)
+            #self.model_A.load_state_dict(saved_state_dict)
+
             self.model_A = self.model_A.to(self.device)
-            optimizer_A = get_optimizer(args.auxiliary.optimizer)
-            optimizer_params = {k: v for k, v in args.auxiliary.optimizer.items() if k != "name"}
-            self.optimizer_A = optimizer_A(self.model_A.parameters(), **optimizer_params)
+
+            #optimizer_A = get_optimizer(args.auxiliary.optimizer)
+            #optimizer_params = {k: v for k, v in args.auxiliary.optimizer.items() if k != "name"}
+            #self.optimizer_A = optimizer_A(self.model_A.parameters(), **optimizer_params)
+            self.optimizer_A = optim.Adam(self.model_A.parameters(), lr=args.auxiliary.optimizer.lr, betas=(0.9, 0.99))
+            self.optimizer_A.zero_grad()
+
             self.aux_loss = nn.CrossEntropyLoss()
 
-    def entropy_loss(self, x):
-        return torch.sum(-F.softmax(x, 1) * F.log_softmax(x, 1), 1).mean()
 
     def weightmap(self, pred1, pred2):
         output = 1.0 - torch.sum((pred1 * pred2), 1).view(1, 1, pred1.size(2), pred1.size(3)) / \
                  (torch.norm(pred1, 2, 1) * torch.norm(pred2, 2, 1)).view(1, 1, pred1.size(2), pred1.size(3))
         return output
-
-    def loss_calc(self, pred, label, device):
-        """
-        This function returns cross entropy loss for semantic segmentation
-        """
-        # out shape batch_size x channels x h x w -> batch_size x channels x h x w
-        # label shape h x w x 1 x batch_size  -> batch_size x 1 x h x w
-        label = label.long().to(device)
-        criterion = CrossEntropy2d(self.num_classes).to(device)
-        return criterion(pred, label)
 
     def lr_poly(self, base_lr, iter, max_iter, power):
         return base_lr * ((1 - float(iter) / max_iter) ** (power))
@@ -100,12 +99,12 @@ class Self_CLAN:
         if len(optimizer.param_groups) > 1:
             optimizer.param_groups[1]['lr'] = lr * 10
 
-
     def train(self, src_loader, tar_loader, val_loader):
 
         loss_rot = loss_adv = loss_weight = loss_D_s = loss_D_t = 0
         args = self.args
         log = self.logger
+        device = self.device
 
         interp_source = nn.Upsample(size=(args.datasets.source.images_size[1], args.datasets.source.images_size[0]), mode='bilinear',  align_corners=True)
         interp_target = nn.Upsample(size=(args.datasets.target.images_size[1], args.datasets.target.images_size[0]), mode='bilinear',  align_corners=True)
@@ -115,13 +114,15 @@ class Self_CLAN:
         target_iter = enumerate(tar_loader)
 
         self.model.train()
+        self.model = self.model.to(device)
 
         if args.method.adversarial:
             self.model_D.train()
+            self.model_D = self.model_D.to(device)
+
         if args.method.self:
             self.model_A.train()
-
-        device = self.device
+            self.model_A = self.model_A.to(device)
 
         log.info('###########   TRAINING STARTED  ############')
         start = time.time()
@@ -133,22 +134,22 @@ class Self_CLAN:
             self.adjust_learning_rate(self.optimizer, i_iter, args.model)
 
             if args.method.adversarial:
+                self.model_D.train()
                 self.optimizer_D.zero_grad()
                 self.adjust_learning_rate(self.optimizer_D, i_iter, args.discriminator)
-                self.model_D.train()
+
             if args.method.self:
+                self.model_A.train()
                 self.optimizer_A.zero_grad()
                 self.adjust_learning_rate(self.optimizer_A, i_iter, args.auxiliary)
-                self.model_A.train()
 
-            damping = (1 - i_iter/self.num_steps) #similar to early stopping
+            damping = (1 - i_iter/self.num_steps) # similar to early stopping
 
         # ======================================================================================
         # train G
         # ======================================================================================
             if args.method.adversarial:
-            # Remove Grads in D
-                for param in self.model_D.parameters():
+                for param in self.model_D.parameters(): # Remove Grads in D
                     param.requires_grad = False
 
             # Train with Source
@@ -160,28 +161,30 @@ class Self_CLAN:
             pred_source1 = interp_source(pred_source1_)
             pred_source2 = interp_source(pred_source2_)
 
-        # Segmentation Loss
-            loss_seg = (self.loss_calc(pred_source1, labels_s, device) + self.loss_calc(pred_source2, labels_s, device))
+            # Segmentation Loss
+            loss_seg = (loss_calc(self.num_classes, pred_source1, labels_s, device) + loss_calc(self.num_classes, pred_source2, labels_s, device))
             loss_seg.backward()
             self.losses['seg'].append(loss_seg.item())
 
-            if not args.solo_source:
-                _, batch = next(target_iter)
-                images_t, _ = batch # get target label here
-                images_t = images_t.to(device)
-                pred_target1_, pred_target2_ = self.model(images_t)
-            # TODO: ADD SEGMENTATION LOSS ALSO X TARGET -> semi-supervised approach
+            # Train with Target
+            _, batch = next(target_iter)
+            images_t, labels_t = batch # get target label here
+            images_t = images_t.to(device)
+            pred_target1_, pred_target2_ = self.model(images_t)
 
-        # Adversarial Loss
+            pred_target1 = interp_target(pred_target1_)
+            pred_target2 = interp_target(pred_target2_)
+
+            if args.use_target_labels and i_iter % (1 / args.target_frac) == 0:
+                loss_seg_t = (loss_calc(args.num_classes, pred_target1, labels_t, device) + loss_calc(args.num_classes, pred_target2, labels_t, device))
+                loss_seg_t.backward()
+                self.losses['seg_t'].append(loss_seg_t.item())
+
+            # Adversarial Loss
             if args.method.adversarial:
-                # Train with Target
-                #_, batch = next(target_iter)
-                #images_t, _ = batch
-                #images_t = images_t.to(device)
-                #pred_target1, pred_target2 = self.model(images_t)
 
-                pred_target1 = interp_target(pred_target1_)
-                pred_target2 = interp_target(pred_target2_)
+                pred_target1 = pred_target1.detach()
+                pred_target2 = pred_target2.detach()
 
                 weight_map = self.weightmap(F.softmax(pred_target1, dim=1), F.softmax(pred_target2, dim=1))
 
@@ -189,11 +192,11 @@ class Self_CLAN:
 
                 # Adaptive Adversarial Loss
                 if i_iter > self.preheat:
-                    loss_adv = self.weighted_bce_loss(D_out, torch.FloatTensor(D_out.data.size()).fill_(self.source_label).to(device),
-                                                 weight_map, args.Epsilon, args.Lambda_local)
+                    loss_adv = self.weighted_bce_loss(D_out, torch.FloatTensor(D_out.data.size()).fill_(self.source_label).to(device), weight_map, args.Epsilon, args.Lambda_local)
                 else:
                     loss_adv = self.bce_loss(D_out, torch.FloatTensor(D_out.data.size()).fill_(self.source_label).to(device))
 
+                loss_adv.requires_grad = True
                 loss_adv = loss_adv * self.args.Lambda_adv * damping
                 loss_adv.backward()
                 self.losses['adv'].append(loss_adv.item())
@@ -230,9 +233,7 @@ class Self_CLAN:
                 pred_source2 = pred_source2.detach()
 
                 D_out_s = interp_source(self.model_D(F.softmax(pred_source1 + pred_source2, dim=1)))
-
                 loss_D_s = self.bce_loss(D_out_s, torch.FloatTensor(D_out_s.data.size()).fill_(self.source_label).to(device))
-
                 loss_D_s.backward()
                 self.losses['ds'].append(loss_D_s.item())
 
@@ -244,9 +245,8 @@ class Self_CLAN:
                 D_out_t = interp_target(self.model_D(F.softmax(pred_target1 + pred_target2, dim=1)))
 
                 # Adaptive Adversarial Loss
-                if (i_iter > self.preheat):
-                    loss_D_t = self.weighted_bce_loss(D_out_t, torch.FloatTensor(D_out_t.data.size()).fill_(self.target_label).to(device),
-                                                 weight_map, args.Epsilon, args.Lambda_local)
+                if i_iter > self.preheat:
+                    loss_D_t = self.weighted_bce_loss(D_out_t, torch.FloatTensor(D_out_t.data.size()).fill_(self.target_label).to(device), weight_map, args.Epsilon, args.Lambda_local)
                 else:
                     loss_D_t = self.bce_loss(D_out_t, torch.FloatTensor(D_out_t.data.size()).fill_(self.target_label).to(device))
 
@@ -266,28 +266,27 @@ class Self_CLAN:
                 - Update weights of classifier and G (segmentation network) 
                 '''
 
-                #TODO: GET RANDOM PREDICTION
                 # Train with Source
-                pred_source1 = pred_source1_.detach()
-                pred_source2 = pred_source2_.detach()
+                # pred_source1 = pred_source1_.detach()
+                # pred_source2 = pred_source2_.detach()
 
                 # Train with Target
                 pred_target1 = pred_target1_.detach()
                 pred_target2 = pred_target2_.detach()
 
                 # save_prediction(pred_source1, './temp/before_square_color.png')
-                pred_source = interp_prediction(F.softmax(pred_source1 + pred_source2, dim=1))
+                # pred_source = interp_prediction(F.softmax(pred_source1 + pred_source2, dim=1))
                 pred_target = interp_prediction(F.softmax(pred_target1 + pred_target2, dim=1))
 
                 # save_prediction(pred_source, './temp/square_color.png')
 
             # ROTATE TENSOR
                 # source
-                label_source = torch.empty(1, dtype=torch.long).random_(args.auxiliary.n_classes).to(device)
-                rotated_pred_source = rotate_tensor(pred_source, self.rotations[label_source.item()])
+                # label_source = torch.empty(1, dtype=torch.long).random_(args.auxiliary.n_classes).to(device)
+                # rotated_pred_source = rotate_tensor(pred_source, self.rotations[label_source.item()])
                 # save_prediction(pred_source, './temp/square_rotated_prediction_color.png')
-                pred_source_label = self.model_A(rotated_pred_source)
-                loss_rot_source = self.aux_loss(pred_source_label, label_source)
+                # pred_source_label = self.model_A(rotated_pred_source)
+                # loss_rot_source = self.aux_loss(pred_source_label, label_source)
 
                 # target
                 label_target = torch.empty(1, dtype=torch.long).random_(args.auxiliary.n_classes).to(device)
@@ -295,8 +294,8 @@ class Self_CLAN:
                 pred_target_label = self.model_A(rotated_pred_target)
                 loss_rot_target = self.aux_loss(pred_target_label, label_target)
 
-                loss_rot = (loss_rot_source + loss_rot_target) * args.Lambda_aux
-
+                #loss_rot = (loss_rot_source + loss_rot_target) * args.Lambda_aux
+                loss_rot = loss_rot_target * args.Lambda_aux
                 loss_rot.backward()
                 self.losses['aux'].append(loss_rot.item())
 
@@ -313,28 +312,30 @@ class Self_CLAN:
 
             if (i_iter % args.save_pred_every == 0 and i_iter != 0) or i_iter == self.num_steps-1:
                 log.info('saving weights...')
-                it = i_iter if i_iter != self.num_steps-1 else i_iter+1 # for last iter
-                torch.save(self.model.state_dict(), join(args.snapshot_dir, 'GTA5_' + str(it) + '.pth'))
+                i_iter = i_iter if i_iter != self.num_steps-1 else i_iter+1 # for last iter
+                torch.save(self.model.state_dict(), join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
                 if args.method.adversarial:
-                    torch.save(self.model_D.state_dict(), join(args.snapshot_dir, 'GTA5_' + str(it) + '_D.pth'))
+                    torch.save(self.model_D.state_dict(), join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D.pth'))
                 if args.method.self:
-                    torch.save(self.model_A.state_dict(), join(args.snapshot_dir, 'GTA5_' + str(it) + '_Aux.pth'))
-
-                self.save_path = join(self.args.prediction_dir, str(i_iter))
-                os.makedirs(self.save_path, exist_ok=True)
+                    torch.save(self.model_A.state_dict(), join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_Aux.pth'))
 
                 self.validate(i_iter, val_loader)
                 compute_mIoU(i_iter, args.datasets.target.val.label_dir, self.save_path, args.datasets.target.json_file, args.datasets.target.base_list, args.results_dir)
+                #SAVE ALSO IMAGES OF SOURCE AND TARGET
 
-        save_losses_plot(args.results_dir, self.losses)
+                save_segmentations(args.images_dir, images_s, labels_s, pred_source1, images_t)
+
+                save_losses_plot(args.results_dir, self.losses)
+
+            del images_s, labels_s, pred_source1, pred_source2, pred_source1_, pred_source2_
+            del images_t, labels_t, pred_target1, pred_target2, pred_target1_, pred_target2_
+
         end = time.time()
         days = int((end - start) / 86400)
-        log.info('Total training time: {} days, {} hours, {} min, {} sec '.format(
-            days, int((end - start) / 3600)-(days*24), int((end - start) / 60 % 60),  int((end - start) % 60)))
+        log.info('Total training time: {} days, {} hours, {} min, {} sec '.format(days, int((end - start) / 3600)-(days*24), int((end - start) / 60 % 60),  int((end - start) % 60)))
         print('### Experiment: ' + args.experiment + ' finished ###')
 
     def validate(self, current_iter, val_loader):
-
         self.model.eval()
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
         self.save_path = join(self.args.prediction_dir, str(current_iter))

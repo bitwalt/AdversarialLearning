@@ -1,0 +1,112 @@
+experiment: adv_48k_10
+random_seed: 1234
+mode: train
+
+method:
+    adversarial: True
+    self: False
+
+#methods: ['seg', 'adv', 'self', 'self_adv']
+solo_source: False
+
+loss: 'standard gan' #[standard gan, wgan, wgan-gp, relativistic-hinge]
+
+dirs:
+    snapshot_dir: '/media/data/walteraul_data/snapshots/'
+    prediction_dir: '/media/data/walteraul_data/results/'
+    results_dir: './results/'
+    log_dir: './log'
+
+num_classes: 19
+weight_loss: True
+
+restore: False
+start_iter: 0
+
+save_pred_every: 4000
+num_steps: 48000
+
+power: 0.9
+Lambda_aux: 1 # NEEDS TUNING
+Lambda_weight: 0.01
+Lambda_adv: 0.001
+Lambda_local: 40
+Epsilon: 0.4
+
+
+networks:
+    segmentation: 'DeepLab' #[DeepLab, ErfNet]
+    discriminator: 'FCDiscriminator'
+    auxiliary: 'Resnet'
+
+model:
+    name: 'DeepLab'
+    restore_from: './models/DeepLab_resnet_pretrained.pth'
+    optimizer:
+        name: 'sgd'
+        lr: 2.5e-4
+        weight_decay: 0.0005
+        momentum: 0.9
+
+discriminator:
+    type: 'FC'
+    learning_rate_d: 1e-4
+    restore_from: None
+    optimizer:
+        name: 'adam'
+        lr: 0.0001
+        weight_decay: 0.0005
+
+auxiliary:
+    name: 'resnet18'
+    mode: 'rotation'
+    n_classes: 4 # UP, DOWN, LEFT, RIGT rotation
+    classes: 19 #classes of cityscapes
+    images_size: [256,256]
+    optimizer:
+        name: 'sgd'
+        lr: 0.001
+        weight_decay: 0.0005
+        momentum: 0.9
+        nesterov: true
+
+datasets:
+    source:
+        name: 'GTA_V'
+        source_dir: '/media/data/walteraul_data/datasets/gta5'
+        source_list: './dataset/gta5_list/train10000.txt'
+        batch_size: 1
+        num_steps: 48000
+        iter_size: 1
+        num_workers: 2
+        images_size: [1280, 720]
+        mean: [104.007, 116.669, 122.679]
+
+    target:
+        name: 'cityscapes'
+        root: '/media/data/walteraul_data/datasets/cityscapes'
+        label_dir: '/media/data/walteraul_data/datasets/cityscapes/gtFine/train'
+        json_file: './dataset/cityscapes_list/info.json'
+        target_list: './dataset/cityscapes_list/train.txt'
+        label_list: './dataset/cityscapes_list/train_label.txt'
+        base_list: 'dataset/cityscapes_list'
+
+        set: 'train'
+        batch_size: 1
+        num_steps: 48000
+        iter_size: 1
+        num_workers: 2
+        images_size: [1024, 512]
+        mean: [104.007, 116.669, 122.679]
+
+        val:
+            set: 'val'
+            list: './dataset/cityscapes_list/val.txt'
+            label_dir: '/media/data/walteraul_data/datasets/cityscapes/gtFine/val'
+            images_size: [1024, 512]
+
+        test:
+            set: 'test'
+            list: './dataset/cityscapes_list/test.txt'
+            batch_size: 1
+            num_workers: 4

@@ -7,7 +7,7 @@ from torch.autograd import Variable
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
-import os
+import os, random
 import os.path as osp
 import time, timeit, datetime
 from model.CLAN_G import Res_Deeplab
@@ -32,15 +32,14 @@ IGNORE_LABEL = 255
 MOMENTUM = 0.9
 NUM_CLASSES = 19
 
-RETRAIN = True
 RESTORE_FROM = './model/DeepLab_resnet_pretrained.pth'
 # RESTORE_FROM_D = './snapshots/GTA2Cityscapes_CVPR_Syn0820_Wg00005weight005_dampingx2/GTA5_36000_D.pth' #For retrain
 
-RESTORE_FROM = '/media/data/walteraul_data/snapshots/CLAN_2k_GTA/GTA5_20001.pth'
-RESTORE_FROM_D = '/media/data/walteraul_data/snapshots/CLAN_2k_GTA/GTA5_20001_D.pth'
+#RESTORE_FROM = '/media/data/walteraul_data/snapshots/CLAN_2k_GTA/GTA5_20001.pth'
+#RESTORE_FROM_D = '/media/data/walteraul_data/snapshots/CLAN_2k_GTA/GTA5_20001_D.pth'
 
 ###
-START_FROM_ITER = 20000 #Default 0
+START_FROM_ITER = 0 #Default 0
 ####
 
 SAVE_NUM_IMAGES = 2
@@ -62,8 +61,8 @@ Epsilon = 0.4
 
 SOURCE = 'GTA5'
 INPUT_SIZE_SOURCE = [1280, 720]
-DATA_DIRECTORY = '/media/data/walteraul_data/datasets/gta5'
-DATA_LIST_PATH = './dataset/gta5_list/train10000.txt'
+DATA_DIRECTORY = '/media/data/walteraul_data/datasets/gta5_deeplab'
+DATA_LIST_PATH = './dataset/gta5_list/train.txt'
 
 TARGET = 'cityscapes'
 INPUT_SIZE_TARGET = [1024, 512]
@@ -72,7 +71,7 @@ DATA_LIST_PATH_TARGET = './dataset/cityscapes_list/train.txt'
 
 SET = 'train'
 
-EXPERIMENT = 'CLAN_10k_GTA'
+EXPERIMENT = 'CLAN_GTA_Adapted'
 
 SNAPSHOT_DIR = '/media/data/walteraul_data/snapshots/'
 #SNAPSHOT_DIR = 'snapshots/'
@@ -182,6 +181,8 @@ def main():
 
     device = torch.device("cuda" if not args.cpu else "cpu")
 
+    random.seed(args.random_seed)
+
     snapshot_dir = os.path.join(args.snapshot_dir, args.experiment)
     log_dir = os.path.join(args.log_dir, args.experiment)
     os.makedirs(log_dir, exist_ok=True)
@@ -205,8 +206,8 @@ def main():
 
     model_D = FCDiscriminator(num_classes=args.num_classes)
 
-    saved_state_dict_D = torch.load(RESTORE_FROM_D) #for retrain
-    model_D.load_state_dict(saved_state_dict_D)
+   # saved_state_dict_D = torch.load(RESTORE_FROM_D) #for retrain
+   # model_D.load_state_dict(saved_state_dict_D)
 
     model_D.train()
     model_D.to(device)
@@ -357,6 +358,7 @@ def main():
                 i_iter, args.num_steps, loss_seg, loss_adv, loss_weight, loss_D_s, loss_D_t), log_file)
 
         if (i_iter % args.save_pred_every == 0 and i_iter != 0) or i_iter == args.num_steps-1:
+            i_iter = i_iter if i_iter != self.num_steps - 1 else i_iter + 1  # for last iter
             print('saving weights...')
             torch.save(model.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
             torch.save(model_D.state_dict(), osp.join(snapshot_dir, 'GTA5_' + str(i_iter) + '_D.pth'))

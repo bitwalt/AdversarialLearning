@@ -1,0 +1,7 @@
+step_4000		===> mIoU: 32.65
+step_8000		===> mIoU: 34.78
+step_12000		===> mIoU: 35.78
+step_16000		===> mIoU: 37.15
+step_20000		===> mIoU: 37.06
+step_24000		===> mIoU: 35.98
+step_28000		===> mIoU: 34.43

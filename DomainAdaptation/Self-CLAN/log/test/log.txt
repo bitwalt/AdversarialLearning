@@ -1,0 +1,3 @@
+DateTime: 03/02/2020 - 00:21:41
+Random seed: 1234
+Iter =      0/     5, loss_seg = 0.1320 loss_rot = 0.0000, loss_adv = 0.0000, loss_weight = 0.0208, loss_D_s = 0.0000 loss_D_t = 0.0000

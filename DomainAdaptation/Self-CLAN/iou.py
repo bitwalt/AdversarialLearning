@@ -27,9 +27,7 @@ def compute_mIoU(current_iter, gt_dir, pred_dir, json_file, devkit_dir, log_dir=
     """
     Compute IoU given the predicted colorized images and 
     """
-    new_log_dir = join(log_dir, 'mIoUs')
-    os.makedirs(new_log_dir, exist_ok=True)
-    log_file = join(new_log_dir, '%s.txt' % str(current_iter))
+    log_file = join(log_dir, 'mIoUs/%s.txt' % str(current_iter))
 
     f = open(join(log_dir, 'results.txt'), 'a+')
 

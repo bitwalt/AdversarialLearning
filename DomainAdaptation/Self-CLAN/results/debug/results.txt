@@ -1,2 +1,0 @@
-step_0		===> mIoU: 0.93
-step_4		===> mIoU: 3.7

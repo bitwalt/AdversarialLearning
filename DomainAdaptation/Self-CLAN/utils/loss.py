@@ -4,6 +4,7 @@ from torch.autograd import Variable
 import numpy as np
 from os.path import join
 import matplotlib.pyplot as plt
+import pickle
 
 mce_loss = nn.MSELoss()
 
@@ -18,7 +19,6 @@ def channel_1toN(img, num_channel):
 
 
 def save_losses_plot(path, losses):
-
     if losses['seg']:
         plt.figure(figsize=(10, 5))
         plt.title("Segmentation Loss")
@@ -28,17 +28,38 @@ def save_losses_plot(path, losses):
         plt.legend()
         save_path = join(path, 'loss_seg.png')
         plt.savefig(save_path)
+        plt.close()
+    if losses['seg_t']:
+        plt.figure(figsize=(10, 5))
+        plt.title("Segmentation Target Loss")
+        plt.plot(losses['seg'], label="T")
+        plt.xlabel("iterations")
+        plt.ylabel("Loss")
+        plt.legend()
+        save_path = join(path, 'loss_seg_target.png')
+        plt.savefig(save_path)
+        plt.close()
     if losses['adv']:
         plt.figure(figsize=(10, 5))
-        plt.title("Discriminator plot")
+        plt.title("Adversarial Loss")
         plt.plot(losses['adv'], label="Adv")
-        plt.plot(losses['ds'], label="D_Synthetic")
-        plt.plot(losses['dt'], label="D_Real")
         plt.xlabel("iterations")
         plt.ylabel("Loss")
         plt.legend()
         save_path = join(path, 'loss_adv.png')
         plt.savefig(save_path)
+
+        plt.figure(figsize=(10, 5))
+        plt.title("Discriminator loss")
+        plt.plot(losses['ds'], label="D_Synthetic")
+        plt.plot(losses['dt'], label="D_Real")
+        plt.xlabel("iterations")
+        plt.ylabel("Loss")
+        plt.legend()
+        save_path = join(path, 'loss_d.png')
+        plt.savefig(save_path)
+        plt.close()
+
     if losses['aux']:
         plt.figure(figsize=(10, 5))
         plt.title("Auxiliary plot")
@@ -48,6 +69,32 @@ def save_losses_plot(path, losses):
         plt.legend()
         save_path = join(path, 'loss_aux.png')
         plt.savefig(save_path)
+        plt.close()
+
+    save_losses(losses, path)
+
+
+def save_losses(obj, path):
+    with open(path + '/losses.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+
+def load_losses(path):
+    with open(path + 'losses.pkl', 'rb') as f:
+        return pickle.load(f)
+
+
+def loss_calc(num_classes, pred, label, device):
+    """
+    This function returns cross entropy loss for semantic segmentation
+    """
+    # out shape batch_size x channels x h x w -> batch_size x channels x h x w
+    # label shape h x w x 1 x batch_size  -> batch_size x 1 x h x w
+    label = label.long().to(device)
+    criterion = CrossEntropy2d(num_classes).to(device)
+    return criterion(pred, label)
+
+
 
 class WeightedBCEWithLogitsLoss(nn.Module):
     
@@ -82,7 +129,7 @@ class CrossEntropy2d(nn.Module):
     def __init__(self, class_num, alpha=None, gamma=2, size_average=True, ignore_label=255):
         super(CrossEntropy2d, self).__init__()
         if alpha is None:
-            self.alpha = Variable(torch.ones(class_num, 1))
+            self.alpha = torch.ones(class_num, 1)
         else:
             if isinstance(alpha, Variable):
                 self.alpha = alpha
@@ -98,7 +145,7 @@ class CrossEntropy2d(nn.Module):
         sm = nn.Softmax2d()
         
         P = sm(predict)
-        P = torch.clamp(P, min = 1e-9, max = 1-(1e-9))
+        P = torch.clamp(P, min=1e-9, max=1 - (1e-9))
         
         target_mask = (target >= 0) * (target != self.ignore_label)
         target = target[target_mask].view(1, -1)
@@ -110,7 +157,6 @@ class CrossEntropy2d(nn.Module):
         if self.size_average:
             loss = batch_loss.mean()
         else:
-            
             loss = batch_loss.sum()
         return loss
 

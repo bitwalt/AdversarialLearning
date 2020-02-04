@@ -1,6 +1,4 @@
-DateTime: 27/01/2020 - 12:15:39
+DateTime: 03/02/2020 - 13:25:39
 Random seed: 1234
 ###########   TRAINING STARTED  ############
-Iter =      0/     5, loss_seg = 12.7121 loss_rot = 2.4491, loss_adv = 0.0007, loss_weight = 0.0200, loss_D_s = 0.6928 loss_D_t = 0.6935
-saving weights...
-Total training time: 0 days, 0 hours, 5 min, 28 sec 
+Iter =      0/ 48000, loss_seg = 12.3940 loss_rot = 3.2303, loss_adv = 0.0000, loss_weight = 0.0200, loss_D_s = 0.0000 loss_D_t = 0.0000

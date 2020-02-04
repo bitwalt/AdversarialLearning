@@ -4801,3 +4801,4 @@ Iter =  47970/ 48000, loss_seg = 0.1360 loss_adv = 0.0000, loss_weight = 0.0000,
 Iter =  47980/ 48000, loss_seg = 0.0569 loss_adv = 0.0000, loss_weight = 0.0000, loss_D_s = 0.1108 loss_D_t = 0.2627
 Iter =  47990/ 48000, loss_seg = 0.1718 loss_adv = 0.0000, loss_weight = 0.0000, loss_D_s = 0.3709 loss_D_t = 0.2334
 Total training time: 1 days, 0 hours, 26 min, 5 sec
+Iter =  20000/ 48000, loss_seg = 0.1002 loss_adv = 0.0011, loss_weight = 0.0121, loss_D_s = 0.2492 loss_D_t = 0.3469

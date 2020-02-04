@@ -70,8 +70,12 @@ def process_config(config_file):
     config.results_dir = join(config.dirs.results_dir, config.experiment)
     config.log_dir = join(config.dirs.log_dir, config.experiment)
 
-    dest = join(config.log_dir, 'config.yaml')
-    copyfile(config_file, dest)
+    config.miou_dir = join(config.results_dir, 'mIoUs')
+    os.makedirs(config.miou_dir, exist_ok=True)
+    config.images_dir = join(config.results_dir, 'images')
+    os.makedirs(config.images_dir, exist_ok=True)
+
+    copyfile(config_file, join(config.log_dir, 'config.yaml'))
 
     return config
 

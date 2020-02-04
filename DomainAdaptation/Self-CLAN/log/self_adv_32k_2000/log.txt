@@ -1,0 +1,11 @@
+DateTime: 29/01/2020 - 10:29:13
+Random seed: 1234
+###########   TRAINING STARTED  ############
+Iter =      0/ 32000, loss_seg = 13.8750 loss_rot = 0.0000, loss_adv = 0.0069, loss_weight = 0.0200, loss_D_s = 0.6930 loss_D_t = 0.6932
+Iter =     10/ 32000, loss_seg = 13.3924 loss_rot = 0.0000, loss_adv = 0.0069, loss_weight = 0.0200, loss_D_s = 0.6929 loss_D_t = 0.6934
+Iter =     20/ 32000, loss_seg = 12.1979 loss_rot = 0.0000, loss_adv = 0.0069, loss_weight = 0.0200, loss_D_s = 0.6925 loss_D_t = 0.6938
+Iter =     30/ 32000, loss_seg = 11.3425 loss_rot = 0.0000, loss_adv = 0.0069, loss_weight = 0.0200, loss_D_s = 0.6919 loss_D_t = 0.6944
+Iter =     40/ 32000, loss_seg = 5.3146 loss_rot = 0.0000, loss_adv = 0.0069, loss_weight = 0.0200, loss_D_s = 0.6904 loss_D_t = 0.6957
+Iter =     50/ 32000, loss_seg = 6.0810 loss_rot = 0.0000, loss_adv = 0.0069, loss_weight = 0.0200, loss_D_s = 0.6884 loss_D_t = 0.6977
+Iter =     60/ 32000, loss_seg = 4.0352 loss_rot = 0.0000, loss_adv = 0.0069, loss_weight = 0.0200, loss_D_s = 0.6859 loss_D_t = 0.6993
+Iter =     70/ 32000, loss_seg = 3.3614 loss_rot = 0.0000, loss_adv = 0.0069, loss_weight = 0.0200, loss_D_s = 0.6856 loss_D_t = 0.6998

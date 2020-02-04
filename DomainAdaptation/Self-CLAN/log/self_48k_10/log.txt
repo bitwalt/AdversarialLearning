@@ -1,0 +1,4 @@
+DateTime: 31/01/2020 - 21:48:36
+Random seed: 1234
+###########   TRAINING STARTED  ############
+Iter =      0/ 48000, loss_seg = 12.4252 loss_rot = 0.0000, loss_adv = 0.0000, loss_weight = 0.0200, loss_D_s = 0.0000 loss_D_t = 0.0000

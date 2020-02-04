@@ -22,3 +22,22 @@ def get_optimizer(cfg):
 
         #print("Using {} optimizer".format(opt_name))
         return key2opt[opt_name]
+
+
+def lr_poly(base_lr, iter, max_iter, power):
+    return base_lr * ((1 - float(iter) / max_iter) ** (power))
+
+
+def lr_warmup(base_lr, iter, warmup_iter):
+    return base_lr * (float(iter) / warmup_iter)
+
+
+def adjust_learning_rate(optimizer, preheat, num_steps, power, i_iter, args):
+    if i_iter < preheat:
+        lr = lr_warmup(args.lr, i_iter, preheat)
+    else:
+        lr = lr_poly(args.lr, i_iter, num_steps, power)
+    optimizer.param_groups[0]['lr'] = lr
+    if len(optimizer.param_groups) > 1:
+        optimizer.param_groups[1]['lr'] = lr * 10
+

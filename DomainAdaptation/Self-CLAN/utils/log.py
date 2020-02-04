@@ -10,13 +10,11 @@ def log_message(message, log_file):
     print(message)
 
 
-def init_log(log_file, args):
+def init_log(log_file):
     if not (os.path.exists(log_file)):
         with open(log_file, 'w+') as f:
             time = datetime.now().strftime('%d/%m/%Y - %H:%M:%S')
             f.write('time: ' + time + '\n\n')
-
-## TODO: ADD MODEL HYPERPARAMETERS ON FILE
 
 def get_logger(logdir, name):
     logger = logging.getLogger(name)

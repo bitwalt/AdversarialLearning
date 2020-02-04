@@ -71,8 +71,8 @@ def main(args):
 
 LABEL_DIR = '/media/data/walteraul_data/datasets/cityscapes/gtFine/val'
 
-PRED_DIR = '/media/data/walteraul_data/results/CLAN_10k_GTA/48000'
-LOG_DIR = 'results/CLAN_10K_GTA/'
+PRED_DIR = '/media/data/walteraul_data/results/self_clan_48k_gta_adapted/4000'
+LOG_DIR = 'results/self_CLAN_GTA_adapted/'
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

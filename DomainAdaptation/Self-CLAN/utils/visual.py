@@ -1,6 +1,12 @@
 import torch
 import numpy as np
 from PIL import Image
+import os
+from os.path import join
+
+import torchvision.transforms.functional as F
+
+from torchvision.utils import save_image
 
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 
@@ -29,6 +35,26 @@ def colorize_mask(mask):
     return new_mask
 
 
+def save_segmentations(save_dir, source_im, source_gt, source_pred, target_im):
+    # Save: source im, source gt, source pred
+    #       target im, target gt, target pred
+
+    save_path = join(save_dir, 'source.png')
+#    save_images(F.to_pil_image(source_im[0].cpu().numpy()), save_path)
+
+    save_image(source_im[0], save_path)
+
+    save_path = join(save_dir, 'target.png')
+    save_images(tensor2im(target_im), save_path)
+
+    save_path = join(save_dir, 'source_label.png')
+#    save_prediction(source_gt, save_path)
+
+    save_path = join(save_dir, 'source_predict.png')
+    save_prediction(source_pred, save_path)
+
+
+
 def tensor2im(image_tensor, imtype=np.uint8):
     #print(image_tensor)
     image_numpy = image_tensor[0].cpu().float().numpy()
@@ -42,7 +68,12 @@ def tensor2im(image_tensor, imtype=np.uint8):
     return image_numpy.astype(imtype)
 
 
-def save_image(image_numpy, image_path):
+def weightmap(pred1, pred2):
+    output = 1.0 - torch.sum((pred1 * pred2), 1).view(1, 1, pred1.size(2), pred1.size(3)) / \
+             (torch.norm(pred1, 2, 1) * torch.norm(pred2, 2, 1)).view(1, 1, pred1.size(2), pred1.size(3))
+    return output
+
+
+def save_images(image_numpy, image_path):
     image_pil = Image.fromarray(image_numpy)
     image_pil.save(image_path)
-    
