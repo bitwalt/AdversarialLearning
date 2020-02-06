@@ -1,11 +1,8 @@
 import random, os
 import numpy as np
+from dataset.data_loader import get_source_train_dataloader, get_target_train_dataloader, get_target_val_dataloader
 from utils.config import process_config, get_args
 from utils.log import get_logger
-
-from dataset.data_loader import get_source_train_dataloader
-from dataset.data_loader import get_target_train_dataloader
-from dataset.data_loader import get_target_val_dataloader
 from Self_CLAN import Self_CLAN
 
 
@@ -32,8 +29,9 @@ def main():
     if config.mode == 'train':
         model.train(source_loader, target_loader, val_loader)
 
-    #elif config.mode == 'test': # NOT IMPLEMENTED - da capire se bastano risultati sul validation set
+    # elif config.mode == 'test':  # NOT YET IMPLEMENTED - papers give results on validation set
     #    model.test(test_loader)
+
 
 if __name__ == '__main__':
     os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')

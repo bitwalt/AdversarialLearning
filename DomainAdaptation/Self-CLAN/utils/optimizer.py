@@ -10,9 +10,9 @@ key2opt = {
     "rmsprop": RMSprop,
 }
 
+
 def get_optimizer(cfg):
     if cfg is None:
-        #print("Using SGD optimizer")
         return SGD
 
     else:
@@ -20,7 +20,6 @@ def get_optimizer(cfg):
         if opt_name not in key2opt:
             raise NotImplementedError("Optimizer {} not implemented".format(opt_name))
 
-        #print("Using {} optimizer".format(opt_name))
         return key2opt[opt_name]
 
 

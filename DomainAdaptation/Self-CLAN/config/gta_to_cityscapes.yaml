@@ -1,41 +1,40 @@
-experiment: clan_48k_target_adapted
+experiment: test
 random_seed: 1234
 mode: train
 
 method:
-    adversarial: True
-    self: False
+    adversarial: False
+    self: True
 
-#methods: ['seg', 'adv', 'self', 'self_adv']
 solo_source: False
+weight_loss: True
 
 loss: 'standard gan' #[standard gan, wgan, wgan-gp, relativistic-hinge]
 
-dirs:
-    snapshot_dir: '/media/data/walteraul_data/snapshots/'
-    prediction_dir: '/media/data/walteraul_data/results/'
-    results_dir: './results/'
-    log_dir: './log'
+use_target_labels: False
+target_frac: 0.2 #fraction of target labels to use
+
 
 num_classes: 19
-weight_loss: True
 
 restore: False
 start_iter: 0
-
 save_pred_every: 4000
 num_steps: 48000
 
+#HYPER PARAMETERS
 power: 0.9
-Lambda_aux: 1 # NEEDS TUNING
+Lambda_aux: 1
 Lambda_weight: 0.01
 Lambda_adv: 0.001
 Lambda_local: 40
 Epsilon: 0.4
 
-target_frac: 0.2 #fraction of target labels to use
-use_target_labels: True
 
+dirs:
+    snapshot_dir: '/media/data/walteraul_data/snapshots/'
+    prediction_dir: '/media/data/walteraul_data/results/'
+    output_dir: './output'
 
 networks:
     segmentation: 'DeepLab' #[DeepLab, ErfNet]
@@ -53,7 +52,7 @@ model:
 
 discriminator:
     type: 'FC'
-    restore_from: None
+    restore_from: None # '/media/data/walteraul_data/snapshots/self_clan_48k_gta_adapted/GTA5_20000_D.pth'
     optimizer:
         name: 'adam'
         lr: 0.0001
@@ -77,7 +76,7 @@ auxiliary:
 datasets:
     source:
         name: 'GTA_V'
-        source_dir: '/media/data/walteraul_data/datasets/gta5_deeplab'
+        source_dir: '/media/data/walteraul_data/datasets/gta5'
         source_list: './dataset/gta5_list/train.txt'
         batch_size: 1
         num_steps: 48000

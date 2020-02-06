@@ -3,7 +3,6 @@ import yaml
 from easydict import EasyDict
 import os
 from os.path import join
-from utils.dirs import create_dirs
 from shutil import copyfile
 import argparse
 
@@ -63,16 +62,19 @@ def process_config(config_file):
     else:
         raise Exception("Only .json and .yaml are supported!")
 
-    create_dirs([config.dirs.snapshot_dir, config.dirs.prediction_dir, config.dirs.results_dir, config.dirs.log_dir], config.experiment)
+    create_dirs([config.dirs.snapshot_dir, config.dirs.prediction_dir, config.dirs.output_dir], config.experiment)
 
     config.snapshot_dir = join(config.dirs.snapshot_dir, config.experiment)
     config.prediction_dir = join(config.dirs.prediction_dir, config.experiment)
-    config.results_dir = join(config.dirs.results_dir, config.experiment)
-    config.log_dir = join(config.dirs.log_dir, config.experiment)
+    config.output_dir = join(config.dirs.output_dir, config.experiment)
 
+    config.results_dir = join(config.output_dir, 'results')
+    config.log_dir = join(config.output_dir, 'log')
     config.miou_dir = join(config.results_dir, 'mIoUs')
-    os.makedirs(config.miou_dir, exist_ok=True)
     config.images_dir = join(config.results_dir, 'images')
+    os.makedirs(config.results_dir, exist_ok=True)
+    os.makedirs(config.log_dir, exist_ok=True)
+    os.makedirs(config.miou_dir, exist_ok=True)
     os.makedirs(config.images_dir, exist_ok=True)
 
     copyfile(config_file, join(config.log_dir, 'config.yaml'))
@@ -80,4 +82,12 @@ def process_config(config_file):
     return config
 
 
+def create_dirs(dirs, exp_name):
+    try:
+        for dir_ in dirs:
+            new_dir = join(dir_, exp_name)
+            os.makedirs(new_dir, exist_ok=True)
+    except Exception as err:
+        print("Creating directories error: {0}".format(err))
+        exit(-1)
 

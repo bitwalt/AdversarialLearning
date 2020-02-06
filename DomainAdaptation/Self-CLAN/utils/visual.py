@@ -19,6 +19,21 @@ for i in range(zero_pad):
     palette.append(0)
 
 
+def rotate_tensor(x, rot):
+
+    if rot == 0:
+        img_rt = x
+    elif rot == 90:
+        img_rt = x.transpose(2, 3)
+    elif rot == 180:
+        img_rt = x.flip(2)
+    elif rot == 270:
+        img_rt = x.transpose(2, 3).flip(3)
+    else:
+        raise ValueError('Rotation angles should be in [0, 90, 180, 270]')
+    return img_rt
+
+
 def save_prediction(tensor, file):
     output = tensor.cpu().data[0].numpy()
     output = output.transpose(1, 2, 0)
@@ -26,13 +41,6 @@ def save_prediction(tensor, file):
     output_col = colorize_mask(output)
     # output = Image.fromarray(output)
     output_col.save(file)
-
-
-def colorize_mask(mask):
-    # mask: numpy array of the mask
-    new_mask = Image.fromarray(mask.astype(np.uint8)).convert('P')
-    new_mask.putpalette(palette)
-    return new_mask
 
 
 def save_segmentations(save_dir, source_im, source_gt, source_pred, target_im):
@@ -54,7 +62,6 @@ def save_segmentations(save_dir, source_im, source_gt, source_pred, target_im):
     save_prediction(source_pred, save_path)
 
 
-
 def tensor2im(image_tensor, imtype=np.uint8):
     #print(image_tensor)
     image_numpy = image_tensor[0].cpu().float().numpy()
@@ -66,6 +73,24 @@ def tensor2im(image_tensor, imtype=np.uint8):
 #    image_numpy = (std * image_numpy + mean) * 255
     image_numpy = image_numpy + IMG_MEAN
     return image_numpy.astype(imtype)
+
+
+def colorize_mask(mask):
+    # mask: numpy array of the mask
+    new_mask = Image.fromarray(mask.astype(np.uint8)).convert('P')
+    new_mask.putpalette(palette)
+    return new_mask
+
+
+def decode_segmap(seg_pred):
+    """
+    Create RGB images from segmentation predictions.
+    """
+    pred = seg_pred.data.cpu().numpy()
+    pred = np.argmax(pred, axis=0)
+    img = mask2color(pred)
+    img = np.transpose(img, (2, 0, 1)) # h, w, c -> c, h, w
+    return img
 
 
 def weightmap(pred1, pred2):

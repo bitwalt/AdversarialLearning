@@ -10,18 +10,12 @@ def log_message(message, log_file):
     print(message)
 
 
-def init_log(log_file):
-    if not (os.path.exists(log_file)):
-        with open(log_file, 'w+') as f:
-            time = datetime.now().strftime('%d/%m/%Y - %H:%M:%S')
-            f.write('time: ' + time + '\n\n')
-
-def get_logger(logdir, name):
+def get_logger(log_dir, name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter("%(message)s")
 
-    file_path = os.path.join(logdir, "log.txt")
+    file_path = os.path.join(log_dir, "log.txt")
     open(file_path, 'w+')
     file_hdlr = logging.FileHandler(file_path)
     file_hdlr.setFormatter(formatter)

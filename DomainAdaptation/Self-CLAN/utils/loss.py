@@ -32,7 +32,7 @@ def save_losses_plot(path, losses):
     if losses['seg_t']:
         plt.figure(figsize=(10, 5))
         plt.title("Segmentation Target Loss")
-        plt.plot(losses['seg'], label="T")
+        plt.plot(losses['seg_t'], label="T")
         plt.xlabel("iterations")
         plt.ylabel("Loss")
         plt.legend()
@@ -74,9 +74,9 @@ def save_losses_plot(path, losses):
     save_losses(losses, path)
 
 
-def save_losses(obj, path):
-    with open(path + '/losses.pkl', 'wb') as f:
-        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+def save_losses(losses, path):
+    with open(path + 'losses.pkl', 'wb') as f:
+        pickle.dump(losses, f, pickle.HIGHEST_PROTOCOL)
 
 
 def load_losses(path):

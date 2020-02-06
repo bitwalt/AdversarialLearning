@@ -1,6 +1,4 @@
-import os
 import time
-import itertools
 import numpy as np
 from PIL import Image
 from os.path import join
@@ -11,18 +9,16 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 from torch.nn import BCEWithLogitsLoss
-from utils.optimizer import get_optimizer
-from networks import get_auxiliary_net
+from models.networks import get_auxiliary_net
 
 from models.CLAN_G import Res_Deeplab
 from models.erfnet_imagenet import ERFNet
 from models.Discriminators import Discriminator
 
-from utils.loss import WeightedBCEWithLogitsLoss, loss_calc
-from utils.loss import save_losses_plot
-from utils.utils import rotate_tensor
-from utils.visual import colorize_mask, save_segmentations
-from iou import compute_mIoU
+from utils.loss import WeightedBCEWithLogitsLoss, loss_calc, save_losses_plot
+from utils.visual import colorize_mask, weightmap, rotate_tensor, save_segmentations
+from utils.metrics import compute_mIoU
+from utils.optimizer import adjust_learning_rate
 
 
 class Self_CLAN:
@@ -33,12 +29,12 @@ class Self_CLAN:
         self.start_iter = args.start_iter
         self.num_steps = args.num_steps
         self.num_classes = args.num_classes
-        self.preheat = self.num_steps/20 # damping instad of early stopping
-        self.source_label = 0 # Labels for Adversarial Training
+        self.preheat = self.num_steps/20  # damping instead of early stopping
+        self.source_label = 0
         self.target_label = 1
         self.bce_loss = torch.nn.BCEWithLogitsLoss()
         self.weighted_bce_loss = WeightedBCEWithLogitsLoss()
-        self.save_path = args.prediction_dir
+        self.save_path = args.prediction_dir  # dir to save class mIoU when validating model
         self.losses = {'seg': list(),'seg_t': list(), 'adv': list(), 'weight': list(), 'ds': list(), 'dt': list(), 'aux': list()}
         self.rotations = [0, 90, 180, 270]
 
@@ -48,56 +44,20 @@ class Self_CLAN:
         # set up models
         if args.networks.segmentation == 'DeepLab':
             self.model = Res_Deeplab(num_classes=args.num_classes, restore_from=args.model.restore_from)
-            #optimizer = get_optimizer(args.model.optimizer)
-            #optimizer_params = {k: v for k, v in args.model.optimizer.items() if k != "name"}
-            #self.optimizer = optimizer(self.model.parameters(), **optimizer_params)
-
             self.optimizer = optim.SGD(self.model.optim_parameters(args.model.optimizer), lr=args.model.optimizer.lr, momentum=args.model.optimizer.momentum, weight_decay=args.model.optimizer.weight_decay)
         if args.networks.segmentation == 'ErfNet':
-            self.model = ERFNet(args.num_classes)
+            self.model = ERFNet(args.num_classes)  # To add image-net pre-training and double classificator
             self.optimizer = optim.SGD(self.model.optim_parameters(args.model.optimizer), lr=args.model.optimizer.lr, momentum=args.model.optimizer.momentum, weight_decay=args.model.optimizer.weight_decay)
 
         if args.method.adversarial:
             self.model_D = Discriminator(type_d=args.discriminator.type, num_classes=args.num_classes, restore=args.restore, restore_from=args.discriminator.restore_from)
-            #optimizer_D = get_optimizer(args.discriminator.optimizer)
-            #optimizer_params = {k: v for k, v in args.discriminator.optimizer.items() if k != "name"}
-            #self.optimizer_D = optimizer_D(self.model_D.parameters(), **optimizer_params)
             self.optimizer_D = optim.Adam(self.model_D.parameters(), lr=args.discriminator.optimizer.lr, betas=(0.9, 0.99))
         if args.method.self:
             self.model_A = get_auxiliary_net(args.auxiliary.name)(input_dim=args.auxiliary.classes, aux_classes=args.auxiliary.n_classes, classes=args.auxiliary.classes)
-            #saved_state_dict = torch.load(args.auxiliary.restore_from)
-            #self.model_A.load_state_dict(saved_state_dict)
-
-            self.model_A = self.model_A.to(self.device)
-
-            #optimizer_A = get_optimizer(args.auxiliary.optimizer)
-            #optimizer_params = {k: v for k, v in args.auxiliary.optimizer.items() if k != "name"}
-            #self.optimizer_A = optimizer_A(self.model_A.parameters(), **optimizer_params)
+            # saved_state_dict = torch.load(args.auxiliary.restore_from)
+            # self.model_A.load_state_dict(saved_state_dict)
             self.optimizer_A = optim.Adam(self.model_A.parameters(), lr=args.auxiliary.optimizer.lr, betas=(0.9, 0.99))
-            self.optimizer_A.zero_grad()
-
             self.aux_loss = nn.CrossEntropyLoss()
-
-
-    def weightmap(self, pred1, pred2):
-        output = 1.0 - torch.sum((pred1 * pred2), 1).view(1, 1, pred1.size(2), pred1.size(3)) / \
-                 (torch.norm(pred1, 2, 1) * torch.norm(pred2, 2, 1)).view(1, 1, pred1.size(2), pred1.size(3))
-        return output
-
-    def lr_poly(self, base_lr, iter, max_iter, power):
-        return base_lr * ((1 - float(iter) / max_iter) ** (power))
-
-    def lr_warmup(self, base_lr, iter, warmup_iter):
-        return base_lr * (float(iter) / warmup_iter)
-
-    def adjust_learning_rate(self, optimizer, i_iter, args):
-        if i_iter < self.preheat:
-            lr = self.lr_warmup(args.optimizer.lr, i_iter, self.preheat)
-        else:
-            lr = self.lr_poly(args.optimizer.lr, i_iter, self.num_steps, self.args.power)
-        optimizer.param_groups[0]['lr'] = lr
-        if len(optimizer.param_groups) > 1:
-            optimizer.param_groups[1]['lr'] = lr * 10
 
     def train(self, src_loader, tar_loader, val_loader):
 
@@ -131,25 +91,25 @@ class Self_CLAN:
 
             self.model.train()
             self.optimizer.zero_grad()
-            self.adjust_learning_rate(self.optimizer, i_iter, args.model)
+            adjust_learning_rate(self.optimizer, self.preheat, args.num_steps, args.power, i_iter, args.model.optimizer)
 
             if args.method.adversarial:
                 self.model_D.train()
                 self.optimizer_D.zero_grad()
-                self.adjust_learning_rate(self.optimizer_D, i_iter, args.discriminator)
+                adjust_learning_rate(self.optimizer_D, self.preheat, args.num_steps, args.power, i_iter, args.discriminator.optimizer)
 
             if args.method.self:
                 self.model_A.train()
                 self.optimizer_A.zero_grad()
-                self.adjust_learning_rate(self.optimizer_A, i_iter, args.auxiliary)
+                adjust_learning_rate(self.optimizer_A, self.preheat, args.num_steps, args.power, i_iter, args.auxiliary.optimizer)
 
-            damping = (1 - i_iter/self.num_steps) # similar to early stopping
+            damping = (1 - i_iter/self.num_steps)  # similar to early stopping
 
         # ======================================================================================
         # train G
         # ======================================================================================
             if args.method.adversarial:
-                for param in self.model_D.parameters(): # Remove Grads in D
+                for param in self.model_D.parameters():  # Remove Grads in D
                     param.requires_grad = False
 
             # Train with Source
@@ -168,14 +128,15 @@ class Self_CLAN:
 
             # Train with Target
             _, batch = next(target_iter)
-            images_t, labels_t = batch # get target label here
+            images_t, labels_t = batch
             images_t = images_t.to(device)
             pred_target1_, pred_target2_ = self.model(images_t)
 
             pred_target1 = interp_target(pred_target1_)
             pred_target2 = interp_target(pred_target2_)
 
-            if args.use_target_labels and i_iter % (1 / args.target_frac) == 0:
+            # Semi-supervised approach
+            if args.use_target_labels and i_iter % int(1 / args.target_frac) == 0:
                 loss_seg_t = (loss_calc(args.num_classes, pred_target1, labels_t, device) + loss_calc(args.num_classes, pred_target2, labels_t, device))
                 loss_seg_t.backward()
                 self.losses['seg_t'].append(loss_seg_t.item())
@@ -186,7 +147,7 @@ class Self_CLAN:
                 pred_target1 = pred_target1.detach()
                 pred_target2 = pred_target2.detach()
 
-                weight_map = self.weightmap(F.softmax(pred_target1, dim=1), F.softmax(pred_target2, dim=1))
+                weight_map = weightmap(F.softmax(pred_target1, dim=1), F.softmax(pred_target2, dim=1))
 
                 D_out = interp_target(self.model_D(F.softmax(pred_target1 + pred_target2, dim=1)))
 
@@ -205,7 +166,7 @@ class Self_CLAN:
             if args.weight_loss:
                 W5 = None
                 W6 = None
-                if args.model.name == 'DeepLab':
+                if args.model.name == 'DeepLab':  # TODO: ADD ERF-NET
 
                     for (w5, w6) in zip(self.model.layer5.parameters(), self.model.layer6.parameters()):
                         if W5 is None and W6 is None:
@@ -274,17 +235,13 @@ class Self_CLAN:
                 pred_target1 = pred_target1_.detach()
                 pred_target2 = pred_target2_.detach()
 
-                # save_prediction(pred_source1, './temp/before_square_color.png')
                 # pred_source = interp_prediction(F.softmax(pred_source1 + pred_source2, dim=1))
                 pred_target = interp_prediction(F.softmax(pred_target1 + pred_target2, dim=1))
 
-                # save_prediction(pred_source, './temp/square_color.png')
-
-            # ROTATE TENSOR
+            # ROTATE TENSORS
                 # source
                 # label_source = torch.empty(1, dtype=torch.long).random_(args.auxiliary.n_classes).to(device)
                 # rotated_pred_source = rotate_tensor(pred_source, self.rotations[label_source.item()])
-                # save_prediction(pred_source, './temp/square_rotated_prediction_color.png')
                 # pred_source_label = self.model_A(rotated_pred_source)
                 # loss_rot_source = self.aux_loss(pred_source_label, label_source)
 
@@ -294,7 +251,7 @@ class Self_CLAN:
                 pred_target_label = self.model_A(rotated_pred_target)
                 loss_rot_target = self.aux_loss(pred_target_label, label_target)
 
-                #loss_rot = (loss_rot_source + loss_rot_target) * args.Lambda_aux
+                # loss_rot = (loss_rot_source + loss_rot_target) * args.Lambda_aux
                 loss_rot = loss_rot_target * args.Lambda_aux
                 loss_rot.backward()
                 self.losses['aux'].append(loss_rot.item())
@@ -312,7 +269,7 @@ class Self_CLAN:
 
             if (i_iter % args.save_pred_every == 0 and i_iter != 0) or i_iter == self.num_steps-1:
                 log.info('saving weights...')
-                i_iter = i_iter if i_iter != self.num_steps-1 else i_iter+1 # for last iter
+                i_iter = i_iter if i_iter != self.num_steps-1 else i_iter+1  # for last iter
                 torch.save(self.model.state_dict(), join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
                 if args.method.adversarial:
                     torch.save(self.model_D.state_dict(), join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D.pth'))
@@ -321,11 +278,10 @@ class Self_CLAN:
 
                 self.validate(i_iter, val_loader)
                 compute_mIoU(i_iter, args.datasets.target.val.label_dir, self.save_path, args.datasets.target.json_file, args.datasets.target.base_list, args.results_dir)
-                #SAVE ALSO IMAGES OF SOURCE AND TARGET
-
-                save_segmentations(args.images_dir, images_s, labels_s, pred_source1, images_t)
-
                 save_losses_plot(args.results_dir, self.losses)
+
+                #SAVE ALSO IMAGES OF SOURCE AND TARGET
+                save_segmentations(args.images_dir, images_s, labels_s, pred_source1, images_t)
 
             del images_s, labels_s, pred_source1, pred_source2, pred_source1_, pred_source2_
             del images_t, labels_t, pred_target1, pred_target2, pred_target1_, pred_target2_

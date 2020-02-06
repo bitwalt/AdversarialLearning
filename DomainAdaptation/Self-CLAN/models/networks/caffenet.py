@@ -5,8 +5,8 @@ from itertools import chain
 import torch
 from torch import nn as nn
 
-from networks.alexnet import Id
-from networks.model_utils import ReverseLayerF
+from models.networks.alexnet import Id
+from models.networks.model_utils import ReverseLayerF
 
 
 class AlexNetCaffe(nn.Module):

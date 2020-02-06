@@ -1,7 +1,7 @@
-from networks.caffenet import caffenet
-from networks.mnist import lenet
-from networks.resnet import resnet18, resnet50
-from networks.alexnet import alexnet
+from models.networks.caffenet import caffenet
+from models.networks.mnist import lenet
+from models.networks.resnet import resnet18, resnet50
+from models.networks.alexnet import alexnet
 
 nets_map = {
     'caffenet': caffenet,
