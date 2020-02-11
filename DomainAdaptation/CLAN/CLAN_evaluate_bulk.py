@@ -20,7 +20,7 @@ RESTORE_FROM = '/media/data/walteraul_data/snapshots/'
 ###
 EXPERIMENT = '20k_5000GTA'
 SAVE_STEP = 4000
-DISCR = True #if true means that in the folder there are also discriminator savings
+DISCR = False #if true means that in the folder there are also discriminator savings
 AUX = False
 ###
 

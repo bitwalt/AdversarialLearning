@@ -1,4 +1,4 @@
-experiment: self_adapted
+experiment: self_48k_gta_lr
 random_seed: 1234
 mode: train
 
@@ -9,16 +9,16 @@ method:
 solo_source: False
 weight_loss: True
 
-loss: 'standard gan' #[standard gan, lsgan, wgan, wgan-gp, relativistic-hinge]
+loss: 'standard gan' #[standard gan, wgan, wgan-gp, relativistic-hinge]
 
 use_target_labels: False
-target_frac: 0.5 #fraction of target labels to use
+target_frac: 0.2 #fraction of target labels to use
 
 num_classes: 19
 
 restore: False
 start_iter: 0
-save_pred_every: 2000
+save_pred_every: 4000
 num_steps: 48000
 
 #HYPER PARAMETERS
@@ -60,21 +60,21 @@ discriminator:
 auxiliary:
     name: 'resnet18'
     mode: 'rotation'
-    restore: False
+    restore: True
     restore_from: None
-    aux_classes: 4 # UP, DOWN, LEFT, RIGT rotation [x2 S/T]
+    aux_classes: 4 # UP, DOWN, LEFT, RIGT rotation
     classes: 19 #classes of cityscapes
     images_size: [256,256]
     optimizer:
         name: 'sgd'
-        lr: 0.001
+        lr: 0.0001
         weight_decay: 0.0005
         momentum: 0.9
 
 datasets:
     source:
         name: 'GTA_V'
-        source_dir: '/media/data/walteraul_data/datasets/gta5_deeplab'
+        source_dir: '/media/data/walteraul_data/datasets/gta5'
         source_list: './dataset/gta5_list/train.txt'
         batch_size: 1
         num_steps: 48000

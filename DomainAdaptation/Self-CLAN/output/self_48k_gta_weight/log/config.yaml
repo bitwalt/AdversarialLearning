@@ -1,4 +1,4 @@
-experiment: self_adapted
+experiment: self_48k_gta_weight
 random_seed: 1234
 mode: train
 
@@ -9,21 +9,21 @@ method:
 solo_source: False
 weight_loss: True
 
-loss: 'standard gan' #[standard gan, lsgan, wgan, wgan-gp, relativistic-hinge]
+loss: 'standard gan' #[standard gan, wgan, wgan-gp, relativistic-hinge]
 
 use_target_labels: False
-target_frac: 0.5 #fraction of target labels to use
+target_frac: 0.2 #fraction of target labels to use
 
 num_classes: 19
 
 restore: False
 start_iter: 0
-save_pred_every: 2000
+save_pred_every: 4000
 num_steps: 48000
 
 #HYPER PARAMETERS
 power: 0.9
-Lambda_aux: 1
+Lambda_aux: 0.01
 Lambda_weight: 0.01
 Lambda_adv: 0.001
 Lambda_local: 40
@@ -74,7 +74,7 @@ auxiliary:
 datasets:
     source:
         name: 'GTA_V'
-        source_dir: '/media/data/walteraul_data/datasets/gta5_deeplab'
+        source_dir: '/media/data/walteraul_data/datasets/gta5'
         source_list: './dataset/gta5_list/train.txt'
         batch_size: 1
         num_steps: 48000

@@ -67,7 +67,7 @@ class GTA5DataSet(data.Dataset):
         image -= self.mean
         image = image.transpose((2, 0, 1))
 
-        return image.copy(), label_copy.copy(), np.array(size), name
+        return image.copy(), label_copy.copy()
 
 
 if __name__ == '__main__':

@@ -1,24 +1,24 @@
-experiment: self_adapted
+experiment: gta_adapted_50target
 random_seed: 1234
 mode: train
 
 method:
     adversarial: False
-    self: True
+    self: False
 
 solo_source: False
 weight_loss: True
 
 loss: 'standard gan' #[standard gan, lsgan, wgan, wgan-gp, relativistic-hinge]
 
-use_target_labels: False
+use_target_labels: True
 target_frac: 0.5 #fraction of target labels to use
 
 num_classes: 19
 
 restore: False
 start_iter: 0
-save_pred_every: 2000
+save_pred_every: 4000
 num_steps: 48000
 
 #HYPER PARAMETERS

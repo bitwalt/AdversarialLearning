@@ -21,6 +21,17 @@ from utils.metrics import compute_mIoU
 from utils.optimizer import adjust_learning_rate
 
 
+'''
+
+In this file I would try to mix Discriminator and Auxiliary task in a Self-Discriminator,
+ whose task will be to distinguish if input is synthetic or real and it's rotation.
+In order to use this approach there is the needs to change also the weighted map and his loss.
+Not sure this idea will fit in the thesis due to time, but worth a try  .
+
+
+'''
+
+
 class Self_CLAN:
     def __init__(self, args, logger):
         self.args = args
@@ -228,8 +239,8 @@ class Self_CLAN:
                 '''
 
                 # Train with Source
-                # pred_source1 = pred_source1_.detach()
-                # pred_source2 = pred_source2_.detach()
+                pred_source1 = pred_source1_.detach()
+                pred_source2 = pred_source2_.detach()
 
                 # Train with Target
                 pred_target1 = pred_target1_.detach()
@@ -240,10 +251,10 @@ class Self_CLAN:
 
             # ROTATE TENSORS
                 # source
-                # label_source = torch.empty(1, dtype=torch.long).random_(args.auxiliary.aux_classes).to(device)
-                # rotated_pred_source = rotate_tensor(pred_source, self.rotations[label_source.item()])
-                # pred_source_label = self.model_A(rotated_pred_source)
-                # loss_rot_source = self.aux_loss(pred_source_label, label_source)
+                label_source = torch.empty(1, dtype=torch.long).random_(args.auxiliary.aux_classes/2).to(device)
+                rotated_pred_source = rotate_tensor(pred_source, self.rotations[label_source.item()])
+                pred_source_label = self.model_A(rotated_pred_source)
+                loss_rot_source = self.aux_loss(pred_source_label, label_source)
 
                 # target
                 label_target = torch.empty(1, dtype=torch.long).random_(args.auxiliary.aux_classes).to(device)
@@ -251,8 +262,8 @@ class Self_CLAN:
                 pred_target_label = self.model_A(rotated_pred_target)
                 loss_rot_target = self.aux_loss(pred_target_label, label_target)
 
-                # loss_rot = (loss_rot_source + loss_rot_target) * args.Lambda_aux
-                loss_rot = loss_rot_target * args.Lambda_aux
+                loss_rot = (loss_rot_source + loss_rot_target) * args.Lambda_aux
+                #loss_rot = loss_rot_target * args.Lambda_aux
                 loss_rot.backward()
                 self.losses['aux'].append(loss_rot.item())
 

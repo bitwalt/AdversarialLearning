@@ -55,8 +55,8 @@ Epsilon = 0.4
 
 SOURCE = 'GTA5'
 INPUT_SIZE_SOURCE = [1280, 720]
-DATA_DIRECTORY = '/media/data/walteraul_data/datasets/gta5'
-DATA_LIST_PATH = './dataset/gta5_list/train10000.txt'
+DATA_DIRECTORY = '/media/data/walteraul_data/datasets/gta5_deeplab'
+DATA_LIST_PATH = './dataset/gta5_list/train.txt'
 
 TARGET = 'cityscapes'
 INPUT_SIZE_TARGET = [1024, 512]
@@ -66,7 +66,7 @@ DATA_LABEL_PATH='/media/data/walteraul_data/datasets/cityscapes/gtFine/train'
 DATA_LIST_LABEL_TARGET = './dataset/cityscapes_list/train_label.txt'
 SET = 'train'
 
-EXPERIMENT = 'DeepLab_Cityscapes'
+EXPERIMENT = 'DeepLab_GTA_adapted'
 SNAPSHOT_DIR = '/media/data/walteraul_data/snapshots/'
 LOG_DIR = 'log'
 
@@ -175,14 +175,14 @@ def main():
     model.to(device)
 
     # DataLoaders
- #  trainloader = data.DataLoader(GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
- #                                         crop_size=args.input_size_source, scale=True, mirror=True, mean=IMG_MEAN),
- #                                          batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
- #   trainloader_iter = enumerate(trainloader)
+    trainloader = data.DataLoader(GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
+                                          crop_size=args.input_size_source, scale=True, mirror=True, mean=IMG_MEAN),
+                                           batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
+    trainloader_iter = enumerate(trainloader)
 
-    trainloader = data.DataLoader(cityscapesDataSetLabel(args.data_dir_target, './dataset/cityscapes_list/info.json', args.data_list_target,args.data_list_label_target,
-                                                    max_iters=args.num_steps * args.iter_size * args.batch_size, crop_size=args.input_size_target,
-                                                    mean=IMG_MEAN, set=args.set), batch_size=args.batch_size, shuffle=True,num_workers=args.num_workers, pin_memory=True)
+ #   trainloader = data.DataLoader(cityscapesDataSetLabel(args.data_dir_target, './dataset/cityscapes_list/info.json', args.data_list_target,args.data_list_label_target,
+ #                                                   max_iters=args.num_steps * args.iter_size * args.batch_size, crop_size=args.input_size_target,
+ #                                                   mean=IMG_MEAN, set=args.set), batch_size=args.batch_size, shuffle=True,num_workers=args.num_workers, pin_memory=True)
 
     trainloader_iter = enumerate(trainloader)
 
@@ -190,9 +190,8 @@ def main():
     optimizer = optim.SGD(model.optim_parameters(args), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
-    #interp_source = nn.Upsample(size=(args.input_size_source[1], args.input_size_source[0]), mode='bilinear', align_corners=True)
-    interp_target = nn.Upsample(size=(args.input_size_target[1], args.input_size_target[0]), mode='bilinear',
-                                align_corners=True)
+    interp = nn.Upsample(size=(args.input_size_source[1], args.input_size_source[0]), mode='bilinear', align_corners=True)
+    #interp = nn.Upsample(size=(args.input_size_target[1], args.input_size_target[0]), mode='bilinear', align_corners=True)
 
     # ======================================================================================
     # Start training
@@ -216,8 +215,8 @@ def main():
 
         pred_source1, pred_source2 = model(images_s)
 
-        pred_source1 = interp_target(pred_source1)
-        pred_source2 = interp_target(pred_source2)
+        pred_source1 = interp(pred_source1)
+        pred_source2 = interp(pred_source2)
         # Segmentation Loss
         loss_seg = (loss_calc(pred_source1, labels_s, device) + loss_calc(pred_source2, labels_s, device))
         loss_seg.backward()

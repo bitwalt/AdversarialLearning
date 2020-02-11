@@ -1,9 +1,9 @@
-experiment: self_adapted
+experiment: self_clan
 random_seed: 1234
 mode: train
 
 method:
-    adversarial: False
+    adversarial: True
     self: True
 
 solo_source: False
@@ -18,7 +18,7 @@ num_classes: 19
 
 restore: False
 start_iter: 0
-save_pred_every: 2000
+save_pred_every: 4000
 num_steps: 48000
 
 #HYPER PARAMETERS
@@ -74,7 +74,7 @@ auxiliary:
 datasets:
     source:
         name: 'GTA_V'
-        source_dir: '/media/data/walteraul_data/datasets/gta5_deeplab'
+        source_dir: '/media/data/walteraul_data/datasets/gta5'
         source_list: './dataset/gta5_list/train.txt'
         batch_size: 1
         num_steps: 48000

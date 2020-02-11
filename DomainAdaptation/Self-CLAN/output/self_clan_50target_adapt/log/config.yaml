@@ -1,9 +1,9 @@
-experiment: self_adapted
+experiment: self_gta_50target_adapt
 random_seed: 1234
 mode: train
 
 method:
-    adversarial: False
+    adversarial: True
     self: True
 
 solo_source: False
@@ -11,7 +11,7 @@ weight_loss: True
 
 loss: 'standard gan' #[standard gan, lsgan, wgan, wgan-gp, relativistic-hinge]
 
-use_target_labels: False
+use_target_labels: True
 target_frac: 0.5 #fraction of target labels to use
 
 num_classes: 19
