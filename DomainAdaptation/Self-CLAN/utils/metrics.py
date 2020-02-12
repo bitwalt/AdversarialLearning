@@ -74,7 +74,7 @@ def compute_mIoU(current_iter, gt_dir, pred_dir, json_file, devkit_dir, log_dir=
         log_message('===>' + name_classes[ind_class] + ':\t' + str(round(mIoUs[ind_class] * 100, 2)), log_file)
     log_message('===> mIoU: ' + mIoU, log_file)
     f.write('step_{0:d}'.format(current_iter) + '\t\t===> mIoU: ' + mIoU + '\n')
-    return mIoUs
+    return mIoU
 
 
 class RunningScore(object):

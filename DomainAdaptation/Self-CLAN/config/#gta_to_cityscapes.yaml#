@@ -1,17 +1,16 @@
-experiment: target
+experiment: self_clan_50target
 random_seed: 1234
 mode: train
 
 method:
-    adversarial: False
-    self: False
+    adversarial: True
+    self: True
 
+solo_source: False
 weight_loss: True
 
 loss: 'standard gan' #[standard gan, lsgan, wgan, wgan-gp, relativistic-hinge]
 
-
-#Semi-supervised -> True, Unsupervised -> False
 use_target_labels: True
 target_frac: 0.5 #fraction of target labels to use
 
@@ -75,7 +74,7 @@ auxiliary:
 datasets:
     source:
         name: 'GTA_V'
-        source_dir: '/media/data/walteraul_data/datasets/gta5'
+        source_dir: '/media/data/walteraul_data/datasets/gta5_deeplab'
         source_list: './dataset/gta5_list/train.txt'
         batch_size: 1
         num_steps: 48000
