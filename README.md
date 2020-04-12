@@ -1,16 +1,4 @@
-# Master Thesis on Domain Adaptation for Semantic Segmentation between syntetic and real data
-
-## GANs
-
-### DCGAN 
-
-* ORIGINAL LOSS
-* WGAN-GP
-* HINGE + SPECTRAL NORMALIZATION
-* LSGAN
-
-### PROGAN 
-### SELF-ATTENTION
+# Master Thesis Degree code on Domain Adaptation for Semantic Segmentation between syntetic and real data
 
 ## IMAGE-TO-IMAGE TRANSLATION
 
@@ -18,4 +6,7 @@
 
 ## DOMAIN ADAPTATION NETWORKS
 
-* Self Aware Grad-GAN (SG-GAN) 
+### AdaptSegNet 
+### CLAN
+### BIDIRECTIONAL LEARNING (BDL)
+### Self-CLAN
