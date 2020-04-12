@@ -1,0 +1,6 @@
+time: 21/01/2020 - 11:17:24
+
+Iter =  20000/ 48000, loss_seg = 0.1910 loss_adv = 0.0019, loss_weight = 0.0121, loss_D_s = 0.2317 loss_D_t = 0.2746
+Iter =  20010/ 48000, loss_seg = 0.1461 loss_adv = 0.0014, loss_weight = 0.0121, loss_D_s = 0.3819 loss_D_t = 0.2606
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
+Total training time: 0 days, 0 hours, 0 min, 1 sec 
