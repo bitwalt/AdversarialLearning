@@ -5,4 +5,5 @@
 *.png
 *.jpg
 *.txt
-.DomainAdaptation/Self-CLAN/output/*.yaml
+*.pkl
+.DomainAdaptation/Self-CLAN/output/
