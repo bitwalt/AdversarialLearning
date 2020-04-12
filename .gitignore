@@ -1,2 +1,8 @@
 .DS_Store
 .idea/
+*.pyc
+*.pth
+*.png
+*.jpg
+*.txt
+.DomainAdaptation/Self-CLAN/output/*.yaml

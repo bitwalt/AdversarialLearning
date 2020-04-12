@@ -10,7 +10,7 @@ from torch.utils import data
 from PIL import Image
 
 class cityscapesDataSetLabel(data.Dataset):
-    def __init__(self, root, list_path, max_iters=None, crop_size=(321, 321), mean=(128, 128, 128), set='val', label_folder=None):
+    def __init__(self, root, list_path, max_iters=None, crop_size=(321, 321), mean=(128, 128, 128), set='val', label_folder='gtFine'):
         self.root = root
         self.list_path = list_path
         self.crop_size = crop_size
@@ -27,7 +27,7 @@ class cityscapesDataSetLabel(data.Dataset):
     def __getitem__(self, index):
         name = self.img_ids[index]
         image = Image.open(osp.join(self.root, "leftImg8bit/%s/%s" % (self.set, name))).convert('RGB')
-        label = Image.open(osp.join(self.root, self.label_folder+"/%s" %name.split('/')[1]))
+        label = Image.open(osp.join(self.root, self.label_folder+"/%s" %name.split('/')))
         # resize
         image = image.resize(self.crop_size, Image.BICUBIC)
         image = np.asarray(image, np.float32)

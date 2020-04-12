@@ -4,6 +4,18 @@ import json
 from PIL import Image
 from os.path import join
 import csv
+import os
+
+
+LABEL_DIR = '/media/data/walteraul_data/datasets/cityscapes/gtFine/val'
+PRED_DIR = '/media/data/walteraul_data/results/'
+LOG_DIR = 'mIoU_results/'
+
+###
+EXPERIMENT = '20k_5000GTA'
+###
+SAVE_STEP = 4000
+
 
 
 def fast_hist(a, b, n):
@@ -51,24 +63,37 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
         hist += fast_hist(label.flatten(), pred.flatten(), num_classes)
         if ind > 0 and ind % 10 == 0:
             print('{:d} / {:d}: {:0.2f}'.format(ind, len(gt_imgs), 100*np.mean(per_class_iu(hist))))
-    
+
     mIoUs = per_class_iu(hist)
     for ind_class in range(num_classes):
-        print('===>' + name_classes[ind_class] + ':\t' + str(round(mIoUs[ind_class] * 100, 2)))
+        print('===>' + name_classes[ind_class] + ':\t\t' + str(round(mIoUs[ind_class] * 100, 2)))
     print('===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2)))
     return str(round(np.nanmean(mIoUs) * 100, 2))
 
 
-def main(gt_dir, pred_dir, devkit_dir):
-   return compute_mIoU(gt_dir, pred_dir, devkit_dir)
+def main(args):
+
+    pred_dir = join(args.pred_dir, args.experiment)
+    log_file = join(args.log_dir, '%s.txt' % args.experiment)
+
+    n_files = len([name for name in os.listdir(pred_dir)])
+
+    with open(log_file, "w+", newline="") as file:
+        for i in range(1, n_files+1):
+            print('### Scoring prediction ' + str(i) + '/' + str(n_files) + ' ###')
+            pred_i_dir = join(pred_dir, '{0:d}'.format(i * args.save_step))
+            mIoU = compute_mIoU(args.gt_dir, pred_i_dir, args.devkit_dir)
+            file.write('step_{0:d}'.format(i * args.save_step) + '\t\t===> mIoU: ' + mIoU + '\n')
 
 
 if __name__ == "__main__":
-    with open("mIoU_result/GTA2Cityscapes_mIoU.csv","a+",newline="") as datacsv:
-        csvwriter = csv.writer(datacsv,dialect = ("excel"))
-        for i in range(1, 50):
-            gt_dir = './data/Cityscapes/gtFine/val'
-            pred_dir = './result/GTA2Cityscapes_{0:d}'.format(i*2000)
-            devkit_dir = './dataset/cityscapes_list'
-            mIoU = main(gt_dir, pred_dir, devkit_dir)
-            csvwriter.writerow([mIoU])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-gt_dir', type=str, default=LABEL_DIR, help='directory which stores CityScapes val gt images')
+    parser.add_argument('-pred_dir', type=str, default=PRED_DIR, help='directory which stores CityScapes val pred images')
+    parser.add_argument('--devkit_dir', default='dataset/cityscapes_list', help='base directory of cityscapes')
+    parser.add_argument('--log_dir', default=LOG_DIR, help='log file directory')
+    parser.add_argument("--experiment", type=str, default=EXPERIMENT, help="Experiment name")
+    parser.add_argument("--save_step", type=str, default=SAVE_STEP, help="Number of iter for each checkpoint")
+    args = parser.parse_args()
+
+    main(args)

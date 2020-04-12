@@ -11,15 +11,16 @@ import torch.nn as nn
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
-DATA_DIRECTORY = './data/Cityscapes'
-DATA_LIST_PATH = './dataset/cityscapes_list/val.txt'
-SAVE_PATH = './result/cityscapes'
+SAVE_PATH = '/media/data/walteraul_data/results/self_clan_48k_gta_adapted/4000' # save prediction here
+RESTORE_FROM = '/media/data/walteraul_data/snapshots/self_clan_48k_gta_adapted/GTA5_4000.pth'          # Restore from this checkpoint
 
-MODEL = 'ResNet' #Vgg
+DATA_DIRECTORY = '/media/data/walteraul_data/datasets/cityscapes'
+DATA_LIST_PATH = './dataset/cityscapes_list/val.txt'
+
+
 IGNORE_LABEL = 255
 NUM_CLASSES = 19
 NUM_STEPS = 500 # Number of images in the validation set.
-RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/GTA2Cityscapes_multi-ed35151c.pth'
 SET = 'val'
 
 palette = [128, 64, 128, 244, 35, 232, 70, 70, 70, 102, 102, 156, 190, 153, 153, 153, 153, 153, 250, 170, 30,
@@ -45,24 +46,15 @@ def get_arguments():
       A list of parsed arguments.
     """
     parser = argparse.ArgumentParser(description="DeepLab-ResNet Network")
-    parser.add_argument("--model", type=str, default=MODEL,
-                        help="available options : ResNet, Vgg")
-    parser.add_argument("--data-dir", type=str, default=DATA_DIRECTORY,
-                        help="Path to the directory containing the Cityscapes dataset.")
-    parser.add_argument("--data-list", type=str, default=DATA_LIST_PATH,
-                        help="Path to the file listing the images in the dataset.")
-    parser.add_argument("--ignore-label", type=int, default=IGNORE_LABEL,
-                        help="The index of the label to ignore during the training.")
-    parser.add_argument("--num-classes", type=int, default=NUM_CLASSES,
-                        help="Number of classes to predict (including background).")
-    parser.add_argument("--restore-from", type=str, default=RESTORE_FROM,
-                        help="Where restore model parameters from.")
-    parser.add_argument("--gpu", type=int, default=0,
-                        help="choose gpu device.")
-    parser.add_argument("--set", type=str, default=SET,
-                        help="choose evaluation set.")
-    parser.add_argument("--save", type=str, default=SAVE_PATH,
-                        help="Path to save result.")
+    parser.add_argument("--data-dir", type=str, default=DATA_DIRECTORY, help="Path to the directory containing the Cityscapes dataset.")
+    parser.add_argument("--data-list", type=str, default=DATA_LIST_PATH, help="Path to the file listing the images in the dataset.")
+    parser.add_argument("--ignore-label", type=int, default=IGNORE_LABEL, help="The index of the label to ignore during the training.")
+    parser.add_argument("--num-classes", type=int, default=NUM_CLASSES, help="Number of classes to predict (including background).")
+    parser.add_argument("--restore-from", type=str, default=RESTORE_FROM, help="Where restore model parameters from.")
+    parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
+    parser.add_argument("--gpu", type=int, default=0, help="choose gpu device.")
+    parser.add_argument("--set", type=str, default=SET, help="choose evaluation set.")
+    parser.add_argument("--save", type=str, default=SAVE_PATH, help="Path to save result.")
     return parser.parse_args()
 
 
@@ -71,34 +63,31 @@ def main():
 
     args = get_arguments()
 
-    gpu0 = args.gpu
+    os.makedirs(args.save, exist_ok=True)
 
-    if not os.path.exists(args.save):
-        os.makedirs(args.save)
-    
-    if args.model == 'ResNet':
-        model = Res_Deeplab(num_classes=args.num_classes)
-    
-    if args.restore_from[:4] == 'http' :
-        saved_state_dict = model_zoo.load_url(args.restore_from)
-    else:
-        saved_state_dict = torch.load(args.restore_from)
+    device = torch.device("cuda" if not args.cpu else "cpu")
+
+    model = Res_Deeplab(num_classes=args.num_classes)
+
+    saved_state_dict = torch.load(args.restore_from)
     model.load_state_dict(saved_state_dict)
-    
+
     model.eval()
-    model.cuda(gpu0)
-    
+    model.to(device)
+
     testloader = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=1, shuffle=False, pin_memory=True)
 
     interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
-    
+
+    print('### STARTING EVALUATING ###')
+    print('total to process: %d' % len(testloader))
     with torch.no_grad():
         for index, batch in enumerate(testloader):
             if index % 100 == 0:
-                print('%d processd' % index)
-            image, _, _, name = batch
-            output1, output2 = model(Variable(image).cuda(gpu0))
+                print('%d processed' % index)
+            image, _, name, = batch
+            output1, output2 = model(image.to(device))
 
             output = interp(output1 + output2).cpu().data[0].numpy()
             
@@ -113,6 +102,13 @@ def main():
 
             output_col.save('%s/%s_color.png' % (args.save, name.split('.')[0]))
 
+    print('### EVALUATING FINISHED ###')
 
 if __name__ == '__main__':
+    os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+    memory_gpu = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+    os.system('rm tmp')
+    gpu_target = str(np.argmax(memory_gpu))
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_target
+    print('Training on GPU ' + gpu_target)
     main()
